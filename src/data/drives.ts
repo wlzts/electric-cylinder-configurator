@@ -1,0 +1,15 @@
+import type { Drive } from '@/types';
+
+// DEMO data. 8 drives.
+export const drives: Drive[] = [
+  { id: 'DRV-100', brand: 'Yaskawa', model: 'SGD7S-1R6', name: '100W Servo Drive', power: 100, voltage: '220V AC', motorCompatibility: ['SV100'], controlModes: ['position', 'velocity', 'torque'], communication: ['PULSE', 'MODBUS-RTU', 'MODBUS-TCP', 'ETHERCAT'], supportedMotorTypes: ['servo'] },
+  { id: 'DRV-200', brand: 'Panasonic', model: 'MBDLN25', name: '200W Servo Drive', power: 200, voltage: '220V AC', motorCompatibility: ['SV200'], controlModes: ['position', 'velocity', 'torque'], communication: ['PULSE', 'MODBUS-RTU', 'ETHERCAT', 'PROFINET'], supportedMotorTypes: ['servo'] },
+  { id: 'DRV-400', brand: 'Mitsubishi', model: 'MR-J4-40A', name: '400W Servo Drive', power: 400, voltage: '220V AC', motorCompatibility: ['SV100', 'SV200', 'SV400'], controlModes: ['position', 'velocity', 'torque'], communication: ['PULSE', 'MODBUS-RTU', 'MODBUS-TCP', 'ETHERCAT', 'CCLINK'], supportedMotorTypes: ['servo'] },
+  { id: 'DRV-750', brand: 'Yaskawa', model: 'SGD7S-7R6', name: '750W Servo Drive', power: 750, voltage: '220V AC', motorCompatibility: ['SV400', 'SV750'], controlModes: ['position', 'velocity', 'torque'], communication: ['PULSE', 'MODBUS-RTU', 'MODBUS-TCP', 'ETHERCAT', 'ETHERNETIP'], supportedMotorTypes: ['servo'] },
+  { id: 'DRV-1000', brand: 'Siemens', model: '6SL3210-5FB', name: '1kW Servo Drive', power: 1000, voltage: '220V AC', motorCompatibility: ['SV750', 'SV1000'], controlModes: ['position', 'velocity', 'torque'], communication: ['PULSE', 'MODBUS-RTU', 'PROFINET', 'ETHERCAT'], supportedMotorTypes: ['servo'] },
+  { id: 'DRV-1500', brand: 'Inovance', model: 'SV660NS5R5', name: '1.5kW Servo Drive', power: 1500, voltage: '220V AC', motorCompatibility: ['SV1000', 'SV1500'], controlModes: ['position', 'velocity', 'torque'], communication: ['PULSE', 'MODBUS-RTU', 'MODBUS-TCP', 'ETHERCAT', 'CANOPEN'], supportedMotorTypes: ['servo'] },
+  { id: 'DRV-2000', brand: 'Delta', model: 'ASD-A2-2023', name: '2kW Servo Drive', power: 2000, voltage: '220V AC', motorCompatibility: ['SV1500', 'SV2000'], controlModes: ['position', 'velocity', 'torque'], communication: ['PULSE', 'MODBUS-RTU', 'ETHERCAT', 'CANOPEN'], supportedMotorTypes: ['servo'] },
+  { id: 'DRV-3000', brand: 'Yaskawa', model: 'SGD7S-330A', name: '3kW Servo Drive', power: 3000, voltage: '400V AC', motorCompatibility: ['SV2000', 'SV3000'], controlModes: ['position', 'velocity', 'torque'], communication: ['PULSE', 'MODBUS-RTU', 'ETHERCAT', 'PROFINET'], supportedMotorTypes: ['servo'] },
+  { id: 'DRV-STEP', brand: 'Generic', model: 'DM556', name: 'Stepper Driver', power: 150, voltage: '24-50V DC', motorCompatibility: ['ST42', 'ST57'], controlModes: ['position'], communication: ['PULSE', 'MODBUS-RTU'], supportedMotorTypes: ['stepper'] },
+  { id: 'DRV-CLSTEP', brand: 'Inovance', model: 'SV660P-CL', name: 'Closed-loop Stepper Drive', power: 300, voltage: '24-70V DC', motorCompatibility: ['CL57', 'CL86'], controlModes: ['position', 'velocity'], communication: ['PULSE', 'MODBUS-RTU', 'ETHERCAT'], supportedMotorTypes: ['closed_loop_stepper'] },
+];
