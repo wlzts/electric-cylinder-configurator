@@ -37,7 +37,7 @@ function CylinderModel({
 }) {
   const group = useRef<Group>(null);
   const partsRef = useRef<PartMesh[]>([]);
-  const { scene } = useGLTF(import.meta.env.BASE_URL + 'models/electric-cylinder.glb?v=2');
+  const { scene } = useGLTF(import.meta.env.BASE_URL + 'models/electric-cylinder.glb?v=3');
 
   // Collect parts from the GLB scene
   useMemo(() => {
@@ -144,7 +144,7 @@ export function Cylinder3DViewer() {
       )}
 
       <Canvas
-        camera={{ position: [0, 0.15, 0.5], fov: 35 }}
+        camera={{ position: [0.3, 0.2, 0.8], fov: 40 }}
         dpr={[1, 2]}
         gl={{ antialias: true }}
       >
@@ -162,8 +162,8 @@ export function Cylinder3DViewer() {
         <ContactShadows position={[0, -0.04, 0]} opacity={0.4} scale={0.5} blur={2.5} />
         <OrbitControls
           enablePan={false}
-          minDistance={0.15}
-          maxDistance={1.0}
+          minDistance={0.3}
+          maxDistance={2.0}
           target={[0, 0, 0]}
         />
       </Canvas>
@@ -171,4 +171,4 @@ export function Cylinder3DViewer() {
   );
 }
 
-useGLTF.preload(import.meta.env.BASE_URL + 'models/electric-cylinder.glb?v=2');
+useGLTF.preload(import.meta.env.BASE_URL + 'models/electric-cylinder.glb?v=3');
