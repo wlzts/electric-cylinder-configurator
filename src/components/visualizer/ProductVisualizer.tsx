@@ -176,7 +176,8 @@ export function ProductVisualizer({ config, className, showLabels = true }: Prod
         </svg>
         )}
 
-        {/* Spec overlay */}
+        {/* Spec overlay — hidden in 3D mode */}
+        {view !== '3d' && (
         <div className="absolute bottom-2 left-2 flex flex-wrap gap-1.5 text-2xs text-muted">
           {cyl && <span className="rounded bg-ink/5 px-1.5 py-0.5 num">{cyl.model}</span>}
           {screw && <span className="rounded bg-ink/5 px-1.5 py-0.5 num">Ø{screw.diameter} · L{screw.lead}</span>}
@@ -184,6 +185,7 @@ export function ProductVisualizer({ config, className, showLabels = true }: Prod
           {motor && <span className="rounded bg-ink/5 px-1.5 py-0.5 num">{motor.power}W</span>}
           <span className="rounded bg-accent/10 px-1.5 py-0.5 text-accent-deep">{t('common_demo')}</span>
         </div>
+        )}
       </div>
     </div>
   );

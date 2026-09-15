@@ -5,7 +5,7 @@ import type { Group } from 'three';
 
 function CylinderModel() {
   const group = useRef<Group>(null);
-  const { scene } = useGLTF(import.meta.env.BASE_URL + 'models/electric-cylinder.glb');
+  const { scene } = useGLTF(import.meta.env.BASE_URL + 'models/electric-cylinder.glb?v=2');
 
   useFrame((state) => {
     if (group.current) {
@@ -51,4 +51,4 @@ export function Cylinder3DViewer() {
   );
 }
 
-useGLTF.preload(import.meta.env.BASE_URL + 'models/electric-cylinder.glb');
+useGLTF.preload(import.meta.env.BASE_URL + 'models/electric-cylinder.glb?v=2');
