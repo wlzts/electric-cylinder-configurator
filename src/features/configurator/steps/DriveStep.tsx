@@ -88,7 +88,7 @@ export function DriveStep() {
                   status={result.status}
                   onClick={() => setConfiguration({ communicationId: p.id })}
                   title={p.name}
-                  subtitle={p.deterministic ? 'Deterministic' : 'Non-deterministic'}
+                  subtitle={p.deterministic ? '实时总线' : '脉冲/模拟量'}
                   whyUnavailable={result.reasons[0]}
                   className="py-3"
                 >

@@ -23,18 +23,18 @@ export function EncoderSensorStep() {
   };
 
   const sensorGroups = [
-    { type: 'home' as const, label: 'Home Sensor', options: sensors.filter((s) => s.type === 'home') },
-    { type: 'positive_limit' as const, label: 'Positive Limit', options: sensors.filter((s) => s.type === 'positive_limit') },
-    { type: 'negative_limit' as const, label: 'Negative Limit', options: sensors.filter((s) => s.type === 'negative_limit') },
+    { type: 'home' as const, label: '原点传感器', options: sensors.filter((s) => s.type === 'home') },
+    { type: 'positive_limit' as const, label: '正限位', options: sensors.filter((s) => s.type === 'positive_limit') },
+    { type: 'negative_limit' as const, label: '负限位', options: sensors.filter((s) => s.type === 'negative_limit') },
   ];
 
   return (
     <div className="space-y-8">
-      {/* Encoder */}
+      {/* 编码器 */}
       <div>
-        <h3 className="mb-1 text-sm font-semibold">Encoder</h3>
+        <h3 className="mb-1 text-sm font-semibold">编码器</h3>
         <p className="mb-4 text-xs text-muted">
-          {motor ? `Available on ${motor.name}: ${motor.encoderOptions.length} options.` : 'Select a motor first to see available encoders.'}
+          {motor ? `${motor.name} 可用：${motor.encoderOptions.length} 种编码器。` : '请先选择电机，再查看可用编码器。'}
         </p>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {encoderResults.map(({ e, result }, i) => {
@@ -57,7 +57,7 @@ export function EncoderSensorStep() {
                   <div className="space-y-1 text-2xs">
                     <div className="flex items-center gap-1.5">
                       <span className={e.powerOffRetention ? 'text-ok' : 'text-muted'}>{e.powerOffRetention ? '✓' : '—'}</span>
-                      <span className="text-muted">Power-off position retention</span>
+                      <span className="text-muted">断电位置保持</span>
                     </div>
                     <p className="text-muted">{e.recommendedFor}</p>
                   </div>
@@ -68,31 +68,31 @@ export function EncoderSensorStep() {
         </div>
       </div>
 
-      {/* Brake */}
+      {/* 抱闸 */}
       <div>
-        <h3 className="mb-1 text-sm font-semibold">Brake</h3>
-        <p className="mb-4 text-xs text-muted">Holding brake for vertical applications or power-loss safety.</p>
+        <h3 className="mb-1 text-sm font-semibold">抱闸</h3>
+        <p className="mb-4 text-xs text-muted">垂直安装或断电安全场景使用的保持抱闸。</p>
         <div className="grid gap-3 sm:grid-cols-2">
           <OptionCard
             selected={!configuration.brake}
             status="compatible"
             onClick={() => setConfiguration({ brake: false })}
-            title="No Brake"
-            subtitle="Standard configuration"
+            title="无抱闸"
+            subtitle="标准配置"
           >
-            <p className="text-2xs text-muted">Lower cost, lighter motor. Suitable for horizontal applications.</p>
+            <p className="text-2xs text-muted">成本更低，电机更轻。适用于水平安装。</p>
           </OptionCard>
           <OptionCard
             selected={configuration.brake}
             status={motor?.brakeAvailable ? 'recommended' : 'incompatible'}
             onClick={() => motor?.brakeAvailable && setConfiguration({ brake: true })}
-            title="With Brake"
-            subtitle={motor?.brakeAvailable ? 'Electromagnetic holding brake' : 'Not available on selected motor'}
-            whyUnavailable={motor?.brakeAvailable ? undefined : 'Selected motor does not support brake.'}
+            title="带抱闸"
+            subtitle={motor?.brakeAvailable ? '电磁保持抱闸' : '所选电机不支持'}
+            whyUnavailable={motor?.brakeAvailable ? undefined : '所选电机不支持抱闸。'}
           >
-            <p className="text-2xs text-muted">Holds load position on power loss. {requirements.orientation === 'vertical' && 'Recommended for vertical installation.'}</p>
+            <p className="text-2xs text-muted">断电时保持负载位置。{requirements.orientation === 'vertical' && '垂直安装推荐使用。'}</p>
             {requirements.orientation === 'vertical' && !configuration.brake && (
-              <div className="mt-2"><Badge tone="warn">Recommended for vertical</Badge></div>
+              <div className="mt-2"><Badge tone="warn">垂直安装推荐</Badge></div>
             )}
           </OptionCard>
         </div>

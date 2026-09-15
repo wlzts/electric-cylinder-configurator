@@ -41,9 +41,9 @@ export function EngineeringCheckStep() {
     if (cyl) {
       items.push({
         id: 'thrust',
-        label: 'Required Thrust',
+        label: '所需推力',
         status: cyl.maxThrust >= requiredThrust ? 'PASS' : 'FAIL',
-        explanation: `Required ${Math.round(requiredThrust)} N, available ${cyl.maxThrust} N (${(cyl.maxThrust / requiredThrust).toFixed(2)}×).`,
+        explanation: `需求 ${Math.round(requiredThrust)} N，可用 ${cyl.maxThrust} N（${(cyl.maxThrust / requiredThrust).toFixed(2)} 倍）。`,
       });
     }
 
@@ -51,9 +51,9 @@ export function EngineeringCheckStep() {
     if (cyl && perf.peakThrust) {
       items.push({
         id: 'peak_thrust',
-        label: 'Peak Thrust Capability',
+        label: '峰值推力',
         status: perf.peakThrust >= requiredThrust * 1.2 ? 'PASS' : 'WARNING',
-        explanation: `Peak ${Math.round(perf.peakThrust)} N vs required ${Math.round(requiredThrust * 1.2)} N (with 20% margin).`,
+        explanation: `峰值 ${Math.round(perf.peakThrust)} N vs 需求 ${Math.round(requiredThrust * 1.2)} N（含20%余量）。`,
       });
     }
 
@@ -61,9 +61,9 @@ export function EngineeringCheckStep() {
     if (motor && motorTorque) {
       items.push({
         id: 'motor_torque',
-        label: 'Motor Torque',
+        label: '电机扭矩',
         status: motor.ratedTorque >= motorTorque ? 'PASS' : motor.peakTorque >= motorTorque ? 'WARNING' : 'FAIL',
-        explanation: `Required ${motorTorque.toFixed(2)} Nm, rated ${motor.ratedTorque} Nm, peak ${motor.peakTorque} Nm.`,
+        explanation: `需求 ${motorTorque.toFixed(2)} Nm，额定 ${motor.ratedTorque} Nm，峰值 ${motor.peakTorque} Nm。`,
       });
     }
 
@@ -71,9 +71,9 @@ export function EngineeringCheckStep() {
     if (motor && motorRPM) {
       items.push({
         id: 'motor_speed',
-        label: 'Motor Speed',
+        label: '电机转速',
         status: motor.maxRPM >= motorRPM ? 'PASS' : 'FAIL',
-        explanation: `Required ${Math.round(motorRPM)} RPM, max ${motor.maxRPM} RPM.`,
+        explanation: `需求 ${Math.round(motorRPM)} RPM，最大 ${motor.maxRPM} RPM。`,
       });
     }
 
@@ -82,9 +82,9 @@ export function EngineeringCheckStep() {
       const margin = ENGINEERING_CONFIG.criticalSpeedMargin;
       items.push({
         id: 'critical_speed',
-        label: 'Screw Critical Speed',
+        label: '丝杠临界转速',
         status: motorRPM <= criticalSpeed * margin ? 'PASS' : 'WARNING',
-        explanation: `Critical ${Math.round(criticalSpeed)} RPM, operating ${Math.round(motorRPM)} RPM (limit ${Math.round(criticalSpeed * margin)} RPM at ${(margin * 100).toFixed(0)}% margin).`,
+        explanation: `临界转速 ${Math.round(criticalSpeed)} RPM，工作转速 ${Math.round(motorRPM)} RPM（限值 ${Math.round(criticalSpeed * margin)} RPM，余量 ${(margin * 100).toFixed(0)}%）。`,
       });
     }
 
@@ -93,9 +93,9 @@ export function EngineeringCheckStep() {
       const screwMax = screw?.maxStroke ?? Infinity;
       items.push({
         id: 'stroke',
-        label: 'Stroke Limit',
+        label: '行程限制',
         status: configuration.stroke <= Math.min(cyl.maxStroke, screwMax) ? 'PASS' : 'FAIL',
-        explanation: `Configured ${configuration.stroke} mm, cylinder max ${cyl.maxStroke} mm${screw ? `, screw max ${screw.maxStroke} mm` : ''}.`,
+        explanation: `配置 ${configuration.stroke} mm，缸筒最大 ${cyl.maxStroke} mm${screw ? `，丝杠最大 ${screw.maxStroke} mm` : ''}。`,
       });
     }
 
@@ -103,9 +103,9 @@ export function EngineeringCheckStep() {
     if (cyl) {
       items.push({
         id: 'payload',
-        label: 'Cylinder Payload',
+        label: '负载能力',
         status: requirements.payload <= cyl.maxPayload ? 'PASS' : 'FAIL',
-        explanation: `Required ${requirements.payload} kg, max ${cyl.maxPayload} kg.`,
+        explanation: `需求 ${requirements.payload} kg，最大 ${cyl.maxPayload} kg。`,
       });
     }
 
@@ -113,22 +113,22 @@ export function EngineeringCheckStep() {
     if (drive && motor) {
       items.push({
         id: 'drive',
-        label: 'Drive Compatibility',
+        label: '驱动器兼容性',
         status: drive.motorCompatibility.includes(motor.id) ? 'PASS' : 'FAIL',
         explanation: drive.motorCompatibility.includes(motor.id)
-          ? `${drive.name} supports ${motor.name}.`
-          : `${drive.name} does not support ${motor.name}.`,
+          ? `${drive.name} 支持 ${motor.name}。`
+          : `${drive.name} 不支持 ${motor.name}。`,
       });
     }
 
     // 9. Brake recommendation
     items.push({
       id: 'brake',
-      label: 'Brake Recommendation',
+      label: '抱闸建议',
       status: requirements.orientation === 'vertical' && !configuration.brake ? 'WARNING' : 'PASS',
       explanation: requirements.orientation === 'vertical' && !configuration.brake
-        ? 'Brake is recommended for vertical applications to reduce risk of load drop during power loss.'
-        : configuration.brake ? 'Brake selected.' : 'Brake not required for horizontal installation.',
+        ? '垂直安装建议使用抱闸，以降低断电时负载坠落风险。'
+        : configuration.brake ? '已选择抱闸。' : '水平安装无需抱闸。',
     });
 
     // 10. Communication compatibility
@@ -136,11 +136,11 @@ export function EngineeringCheckStep() {
       const proto = protocols.find((p) => p.id === configuration.communicationId);
       items.push({
         id: 'comm',
-        label: 'Communication Compatibility',
+        label: '通讯兼容性',
         status: drive.communication.includes(configuration.communicationId) ? 'PASS' : 'FAIL',
         explanation: drive.communication.includes(configuration.communicationId)
-          ? `${drive.name} supports ${proto?.name ?? configuration.communicationId}.`
-          : `${drive.name} does not support ${proto?.name ?? configuration.communicationId}.`,
+          ? `${drive.name} 支持 ${proto?.name ?? configuration.communicationId}。`
+          : `${drive.name} 不支持 ${proto?.name ?? configuration.communicationId}。`,
       });
     }
 
@@ -151,20 +151,20 @@ export function EngineeringCheckStep() {
     });
     items.push({
       id: 'accessories',
-      label: 'Accessory Compatibility',
+      label: '附件兼容性',
       status: accIssues.length === 0 ? 'PASS' : 'FAIL',
       explanation: accIssues.length === 0
-        ? 'All selected accessories are compatible.'
-        : `${accIssues.length} accessory(ies) not compatible with selected cylinder.`,
+        ? '所有附件均兼容。'
+        : `${accIssues.length} 个附件与所选电缸不兼容。`,
     });
 
     // 12. Safety factor
     if (safetyFactor !== null) {
       items.push({
         id: 'safety',
-        label: 'Safety Factor',
+        label: '安全系数',
         status: safetyFactor >= ENGINEERING_CONFIG.safetyFactor.recommended ? 'PASS' : safetyFactor >= ENGINEERING_CONFIG.safetyFactor.acceptable ? 'WARNING' : 'FAIL',
-        explanation: `Safety factor ${safetyFactor.toFixed(2)} (recommended ≥${ENGINEERING_CONFIG.safetyFactor.recommended}, acceptable ≥${ENGINEERING_CONFIG.safetyFactor.acceptable}).`,
+        explanation: `安全系数 ${safetyFactor.toFixed(2)}（推荐 ≥${ENGINEERING_CONFIG.safetyFactor.recommended}，可接受 ≥${ENGINEERING_CONFIG.safetyFactor.acceptable}）。`,
       });
     }
 
@@ -252,7 +252,7 @@ export function EngineeringCheckStep() {
       </div>
 
       <p className="rounded-lg bg-accent/5 px-3 py-2 text-2xs text-muted">
-        {t('eng_demo_note')} Required thrust: {formatNumber(calculateRequiredThrust(requirements))} N.
+        {t('eng_demo_note')} 所需推力：{formatNumber(calculateRequiredThrust(requirements))} N。
       </p>
     </div>
   );

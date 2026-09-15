@@ -14,10 +14,10 @@ const iconMap: Record<string, LucideIcon> = {
 };
 
 const categoryLabels: Record<string, string> = {
-  mounting: 'Mounting',
-  coupling: 'Coupling',
-  protection: 'Protection',
-  cable: 'Cable Management',
+  mounting: '安装方式',
+  coupling: '连接方式',
+  protection: '防护装置',
+  cable: '线缆管理',
 };
 
 export function AccessoryStep() {
@@ -39,7 +39,7 @@ export function AccessoryStep() {
 
   return (
     <div className="space-y-6">
-      <p className="text-xs text-muted">Optional equipment. Add mounting, coupling, protection, and cable management accessories. Compatibility is validated per cylinder series.</p>
+      <p className="text-xs text-muted">可选附件。添加安装方式、连接方式、防护装置和线缆管理附件。兼容性按电缸系列自动校验。</p>
 
       {categories.map((cat) => {
         const group = results.filter(({ a }) => a.category === cat);
