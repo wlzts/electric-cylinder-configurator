@@ -18,8 +18,8 @@ interface ViewerModel {
 }
 
 const MODELS: ViewerModel[] = [
-  { id: 'coze40', label: 'COZE40 滚珠丝杠型', file: 'models/electric-cylinder.glb?v=4' },
-  { id: 'dmc160', label: 'DMC160 同步带型', file: 'models/dmc160.glb?v=4' },
+  { id: 'coze40', label: 'COZE40 滚珠丝杠型', file: 'models/electric-cylinder.glb?v=5' },
+  { id: 'dmc160', label: 'DMC160 同步带型', file: 'models/dmc160.glb?v=5' },
 ];
 
 export function Cylinder3DViewer() {
@@ -46,8 +46,12 @@ export function Cylinder3DViewer() {
       el.setAttribute('auto-rotate', '');
       el.setAttribute('auto-rotate-delay', '1000');
       el.setAttribute('rotation-per-second', '24deg');
-      el.setAttribute('shadow-intensity', '1');
-      el.setAttribute('exposure', '1.05');
+      // 工作室环境光照，让金属材质有反射质感
+      el.setAttribute('environment-image', 'neutral');
+      el.setAttribute('environment-intensity', '1');
+      el.setAttribute('shadow-intensity', '1.2');
+      el.setAttribute('shadow-softness', '0.6');
+      el.setAttribute('exposure', '1.15');
       el.setAttribute('interaction-prompt', 'auto');
       el.setAttribute('interaction-prompt-style', 'wiggle');
       el.setAttribute('loading', 'lazy');
