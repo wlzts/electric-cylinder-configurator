@@ -13,12 +13,18 @@ const PART_NAMES: Record<string, { zh: string; en: string }> = {
   end: { zh: '端盖', en: 'End Cap' },
 };
 
-function identifyPart(name: string): string | null {
+function identifyPart(name: string, modelId: string): string | null {
   const n = name.toLowerCase();
+  if (modelId === 'dmc160') {
+    if (n.includes('rod')) return 'rod';
+    if (n.includes('ms1h3')) return 'motor';
+    if (n.includes('tb-')) return 'belt';
+    if (n.includes('end-')) return 'end';
+    return 'body';
+  }
+  // COZE40
   if (n.includes('rod')) return 'rod';
-  if (n.includes('ms1h3') || n.includes('motor') || n.includes('p400')) return 'motor';
-  if (n.includes('tb-') || n.includes('timing')) return 'belt';
-  if (n.includes('end-') || n.includes('end cap')) return 'end';
+  if (n.includes('motor') || n.includes('p400')) return 'motor';
   if (n.includes('body_1') || n.includes('body1')) return 'body_1';
   if (n.includes('body')) return 'body';
   return null;
@@ -28,18 +34,53 @@ interface PartInfo {
   mesh: Mesh;
   partKey: string;
   originalX: number;
+  originalY: number;
 }
+
+// 爆炸偏移 [dx, dy]，使用各模型自身单位（COZE 为 mm，DMC160 为 m）
+type ExplodeMap = Record<string, [number, number]>;
 
 interface ModelConfig {
   id: string;
   label: string;
   file: string;
   center: [number, number, number];
+  explode: ExplodeMap;
+  // 行程伸长：方向符号与每 mm 行程的位移（模型自身单位）
+  rodExtendSign: number;
+  rodExtendPerMm: number;
 }
 
 const MODELS: ModelConfig[] = [
-  { id: 'coze40', label: 'COZE40 滚珠丝杠型', file: 'models/electric-cylinder.glb?v=12', center: [-0.051, 0, 0.0065] },
-  { id: 'dmc160', label: 'DMC160 同步带型', file: 'models/dmc160.glb?v=12', center: [-0.222, -0.107, 0] },
+  {
+    id: 'coze40',
+    label: 'COZE40 滚珠丝杠型',
+    file: 'models/electric-cylinder.glb?v=13',
+    center: [-0.051, 0, 0.0065],
+    // 左右分离
+    explode: {
+      rod: [400, 0],
+      motor: [-300, 0],
+      body_1: [200, 0],
+    },
+    rodExtendSign: 1,
+    rodExtendPerMm: 0.35,
+  },
+  {
+    id: 'dmc160',
+    label: 'DMC160 同步带型',
+    file: 'models/dmc160.glb?v=13',
+    center: [-0.222, -0.107, 0],
+    // 上下分离：电机/同步带向上，活塞杆/端盖向下
+    explode: {
+      motor: [0, 0.18],
+      belt: [0, 0.12],
+      rod: [0, -0.16],
+      end: [0, -0.1],
+    },
+    rodExtendSign: -1,
+    rodExtendPerMm: 0.00035,
+  },
 ];
 
 function CylinderModel({
@@ -64,14 +105,15 @@ function CylinderModel({
     scene.traverse((child) => {
       const mesh = child as Mesh;
       if (mesh.isMesh) {
-        const key = identifyPart(mesh.name);
-        if (key && !partsRef.current.find((p) => p.partKey === key)) {
+        const key = identifyPart(mesh.name, model.id);
+        if (key) {
           const mat = mesh.material as THREE.MeshStandardMaterial;
           if (mat && !mat.emissive) mat.emissive = new THREE.Color(0x000000);
           partsRef.current.push({
             mesh,
             partKey: key,
             originalX: mesh.position.x,
+            originalY: mesh.position.y,
           });
           const meshAny = mesh as unknown as { onPointerDown?: (e: { stopPropagation: () => void }) => void };
           meshAny.onPointerDown = (e: { stopPropagation: () => void }) => {
@@ -86,30 +128,33 @@ function CylinderModel({
         (mesh as unknown as { onPointerDown?: unknown }).onPointerDown = null;
       });
     };
-  }, [scene, selectedPart, onSelectPart]);
+  }, [scene, selectedPart, onSelectPart, model.id]);
 
   useFrame((_, delta) => {
     if (group.current && !selectedPart) {
       group.current.rotation.y += delta * 0.15;
     }
 
-    partsRef.current.forEach(({ mesh, partKey, originalX }) => {
+    partsRef.current.forEach(({ mesh, partKey, originalX, originalY }) => {
       let targetX = originalX;
+      let targetY = originalY;
 
       if (exploded) {
-        if (partKey === 'rod') targetX = originalX + 400;
-        if (partKey === 'motor') targetX = originalX - 300;
-        if (partKey === 'body_1') targetX = originalX + 200;
-        if (partKey === 'belt') targetX = originalX + 150;
-        if (partKey === 'end') targetX = originalX - 150;
+        const offset = model.explode[partKey];
+        if (offset) {
+          targetX += offset[0];
+          targetY += offset[1];
+        }
       }
 
       if (partKey === 'rod' && !exploded) {
-        const strokeExtend = (strokeMm - 100) * 0.35;
+        const strokeExtend = (strokeMm - 100) * model.rodExtendPerMm * model.rodExtendSign;
         targetX = originalX + strokeExtend;
       }
 
-      mesh.position.x += (targetX - mesh.position.x) * Math.min(1, delta * 5);
+      const ease = Math.min(1, delta * 5);
+      mesh.position.x += (targetX - mesh.position.x) * ease;
+      mesh.position.y += (targetY - mesh.position.y) * ease;
     });
 
     partsRef.current.forEach(({ mesh, partKey }) => {
