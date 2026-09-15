@@ -36,29 +36,29 @@ function CylinderModel({
 }) {
   const group = useRef<Group>(null);
   const partsRef = useRef<PartInfo[]>([]);
-  const { scene } = useGLTF(import.meta.env.BASE_URL + 'models/electric-cylinder.glb?v=5');
+  const { scene } = useGLTF(import.meta.env.BASE_URL + 'models/electric-cylinder.glb?v=7');
 
   useEffect(() => {
     partsRef.current = [];
-    scene.traverse((child) => {
-      const mesh = child as Mesh;
-      if (mesh.isMesh) {
-        const key = identifyPart(mesh.name);
-        if (key && mesh.parent) {
-          const mat = mesh.material as THREE.MeshStandardMaterial;
-          if (mat && !mat.emissive) mat.emissive = new THREE.Color(0x000000);
-          // Use parent node (scene graph node with the actual transform)
-          const node = mesh.parent;
-          partsRef.current.push({
-            node,
-            partKey: key,
-            originalPos: node.position.clone(),
-          });
-          const meshAny = mesh as unknown as { onPointerDown?: (e: { stopPropagation: () => void }) => void };
-          meshAny.onPointerDown = (e: { stopPropagation: () => void }) => {
-            e.stopPropagation();
-            onSelectPart(selectedPart === key ? null : key);
-          };
+    scene.traverse((obj) => {
+      for (const child of obj.children) {
+        const mesh = child as Mesh;
+        if (mesh.isMesh) {
+          const key = identifyPart(mesh.name);
+          if (key && !partsRef.current.find((p) => p.partKey === key)) {
+            const mat = mesh.material as THREE.MeshStandardMaterial;
+            if (mat && !mat.emissive) mat.emissive = new THREE.Color(0x000000);
+            partsRef.current.push({
+              node: obj,
+              partKey: key,
+              originalPos: obj.position.clone(),
+            });
+            const meshAny = mesh as unknown as { onPointerDown?: (e: { stopPropagation: () => void }) => void };
+            meshAny.onPointerDown = (e: { stopPropagation: () => void }) => {
+              e.stopPropagation();
+              onSelectPart(selectedPart === key ? null : key);
+            };
+          }
         }
       }
     });
@@ -172,4 +172,4 @@ export function Cylinder3DViewer() {
   );
 }
 
-useGLTF.preload(import.meta.env.BASE_URL + 'models/electric-cylinder.glb?v=5');
+useGLTF.preload(import.meta.env.BASE_URL + 'models/electric-cylinder.glb?v=7');
