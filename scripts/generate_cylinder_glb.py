@@ -1,140 +1,139 @@
 #!/usr/bin/env python3
 """
-Generate a simple electric cylinder GLB model from primitives.
-方缸筒电缸: square tube body + rod + rod end + base + servo motor + gearbox
+Generate a detailed electric cylinder GLB model.
+方缸筒电缸: square aluminum extrusion + rod + rod end + base + servo motor + gearbox
+Built from trimesh primitives with PBR materials.
 """
 import trimesh
 import numpy as np
 
-# Materials (PBR)
-aluminum = trimesh.visual.material.PBRMaterial(
-    baseColorFactor=[0.75, 0.76, 0.78, 1.0],
-    metallicFactor=0.85,
-    roughnessFactor=0.35,
-    name="aluminum",
-)
-dark_metal = trimesh.visual.material.PBRMaterial(
-    baseColorFactor=[0.12, 0.12, 0.12, 1.0],
-    metallicFactor=0.7,
-    roughnessFactor=0.45,
-    name="dark_metal",
-)
-black_plastic = trimesh.visual.material.PBRMaterial(
-    baseColorFactor=[0.06, 0.06, 0.06, 1.0],
-    metallicFactor=0.2,
-    roughnessFactor=0.6,
-    name="black_plastic",
-)
-steel = trimesh.visual.material.PBRMaterial(
-    baseColorFactor=[0.6, 0.62, 0.65, 1.0],
-    metallicFactor=0.9,
-    roughnessFactor=0.25,
-    name="steel",
-)
+# ---- PBR Materials ----
+def mat(color, metallic=0.0, roughness=0.5, name=""):
+    return trimesh.visual.material.PBRMaterial(
+        baseColorFactor=color, metallicFactor=metallic, roughnessFactor=roughness, name=name
+    )
+
+aluminum = mat([0.72, 0.73, 0.75, 1.0], 0.85, 0.3, "aluminum")
+aluminum_dark = mat([0.45, 0.46, 0.48, 1.0], 0.8, 0.4, "aluminum_dark")
+steel = mat([0.65, 0.66, 0.68, 1.0], 0.9, 0.2, "steel")
+dark_metal = mat([0.15, 0.15, 0.16, 1.0], 0.7, 0.45, "dark_metal")
+black_plastic = mat([0.08, 0.08, 0.08, 1.0], 0.1, 0.55, "black_plastic")
+rubber = mat([0.05, 0.05, 0.05, 1.0], 0.0, 0.8, "rubber")
 
 meshes = []
 
-# === 1. Square tube body (方缸筒) ===
-# Vertical square extrusion: 60x60mm cross-section, 400mm tall
-body_w = 0.060  # 60mm
-body_h = 0.400  # 400mm
-body = trimesh.creation.box(
-    extents=[body_w, body_w, body_h],
-    transform=trimesh.transformations.translation_matrix([0, 0, body_h / 2 + 0.04]),
-)
-body.visual.material = aluminum
-meshes.append(body)
+def add(mesh, material):
+    mesh.visual.material = material
+    meshes.append(mesh)
 
-# Corner bolt holes (visual: small cylinders at 4 corners near top and bottom)
-corner_offset = body_w / 2 - 0.006
-for z_pos in [0.05, body_h + 0.03]:
-    for dx in [-corner_offset, corner_offset]:
-        for dy in [-corner_offset, corner_offset]:
-            hole = trimesh.creation.cylinder(
-                radius=0.002, height=0.003,
-                transform=trimesh.transformations.translation_matrix([dx, dy, z_pos]),
-            )
-            hole.visual.material = dark_metal
-            meshes.append(hole)
+def translate(mesh, x, y, z):
+    mesh.apply_translation([x, y, z])
+    return mesh
 
-# === 2. Bottom mounting base ===
-base = trimesh.creation.box(
-    extents=[0.100, 0.100, 0.035],
-    transform=trimesh.transformations.translation_matrix([0, 0, 0.0175]),
-)
-base.visual.material = black_plastic
-meshes.append(base)
+def cyl_x(radius, length, x, y, z):
+    """Cylinder along X axis."""
+    c = trimesh.creation.cylinder(radius, length)
+    c.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
+    return translate(c, x, y, z)
 
-# Base mounting ears
-for dx in [-0.055, 0.055]:
-    ear = trimesh.creation.box(
-        extents=[0.015, 0.080, 0.015],
-        transform=trimesh.transformations.translation_matrix([dx, 0, 0.015]),
-    )
-    ear.visual.material = black_plastic
-    meshes.append(ear)
+# ---- Dimensions (meters) ----
+BODY_W = 0.060
+BODY_H = 0.420
+BASE_Z = 0.030
+CENTER_Z = BASE_Z + BODY_H / 2
 
-# === 3. Piston rod (推杆) ===
-rod_radius = 0.008
-rod_length = 0.120
-rod = trimesh.creation.cylinder(
-    radius=rod_radius, height=rod_length,
-    transform=trimesh.transformations.translation_matrix([0, 0, body_h + 0.04 + rod_length / 2]),
-)
-rod.visual.material = steel
-meshes.append(rod)
+# === 1. Base ===
+add(translate(trimesh.creation.box([0.110, 0.110, BASE_Z]), 0, 0, BASE_Z / 2), black_plastic)
+add(translate(trimesh.creation.box([0.120, 0.080, 0.012]), 0, 0, BASE_Z + 0.006), dark_metal)
+for dx in [-0.042, 0.042]:
+    for dy in [-0.042, 0.042]:
+        add(translate(trimesh.creation.cylinder(0.003, 0.005), dx, dy, BASE_Z + 0.003), dark_metal)
 
-# === 4. Spherical rod end (鱼眼关节) ===
-rod_end_z = body_h + 0.04 + rod_length + 0.025
-rod_end = trimesh.creation.icosphere(radius=0.025)
-rod_end.apply_translation([0, 0, rod_end_z])
-rod_end.visual.material = steel
-meshes.append(rod_end)
+# === 2. Square aluminum body ===
+add(translate(trimesh.creation.box([BODY_W, BODY_W, BODY_H]), 0, 0, CENTER_Z), aluminum)
+add(translate(trimesh.creation.box([BODY_W + 0.004, BODY_W + 0.004, 0.012]), 0, 0, BASE_Z + BODY_H + 0.006), dark_metal)
+add(translate(trimesh.creation.box([BODY_W + 0.004, BODY_W + 0.004, 0.010]), 0, 0, BASE_Z + 0.005), dark_metal)
 
-# Inner hole in rod end
-rod_end_hole = trimesh.creation.cylinder(
-    radius=0.010, height=0.030,
-    transform=trimesh.transformations.rotation_matrix(np.pi / 2, [1, 0, 0])
-    .dot(trimesh.transformations.translation_matrix([0, 0, rod_end_z])),
-)
-rod_end_hole.visual.material = dark_metal
-meshes.append(rod_end_hole)
+# Corner bolts
+for dx in [-BODY_W/2 + 0.005, BODY_W/2 - 0.005]:
+    for dy in [-BODY_W/2 + 0.005, BODY_W/2 - 0.005]:
+        add(translate(trimesh.creation.cylinder(0.0025, 0.004), dx, dy, BASE_Z + BODY_H - 0.008), steel)
+        add(translate(trimesh.creation.cylinder(0.0025, 0.004), dx, dy, BASE_Z + 0.012), steel)
 
-# === 5. Servo motor on the side ===
-motor_radius = 0.035
-motor_length = 0.110
-motor_x = body_w / 2 + motor_length / 2 + 0.012
-motor = trimesh.creation.cylinder(
-    radius=motor_radius, height=motor_length,
-    transform=trimesh.transformations.rotation_matrix(np.pi / 2, [0, 1, 0])
-    .dot(trimesh.transformations.translation_matrix([motor_x, 0, body_h * 0.4])),
-)
-motor.visual.material = black_plastic
-meshes.append(motor)
+# Guide rail on side
+add(translate(trimesh.creation.box([0.004, 0.012, BODY_H - 0.04]), BODY_W/2 + 0.002, 0, CENTER_Z), aluminum_dark)
 
-# Motor front cap
-motor_cap = trimesh.creation.cylinder(
-    radius=motor_radius * 0.85, height=0.008,
-    transform=trimesh.transformations.rotation_matrix(np.pi / 2, [0, 1, 0])
-    .dot(trimesh.transformations.translation_matrix([motor_x + motor_length / 2 - 0.004, 0, body_h * 0.4])),
-)
-motor_cap.visual.material = dark_metal
-meshes.append(motor_cap)
+# === 3. Piston rod ===
+ROD_R = 0.008
+ROD_LEN = 0.130
+rod_z = BASE_Z + BODY_H + ROD_LEN / 2
+add(translate(trimesh.creation.cylinder(ROD_R, ROD_LEN), 0, 0, rod_z), steel)
+add(translate(trimesh.creation.cylinder(0.012, 0.018), 0, 0, BASE_Z + BODY_H + 0.012), dark_metal)
 
-# === 6. Gearbox (减速机) between motor and body ===
-gbx_radius = 0.028
-gbx_length = 0.035
-gbx_x = body_w / 2 + gbx_length / 2 + 0.004
-gbx = trimesh.creation.cylinder(
-    radius=gbx_radius, height=gbx_length,
-    transform=trimesh.transformations.rotation_matrix(np.pi / 2, [0, 1, 0])
-    .dot(trimesh.transformations.translation_matrix([gbx_x, 0, body_h * 0.4])),
-)
-gbx.visual.material = dark_metal
-meshes.append(gbx)
+# === 4. Rod end (spherical bearing) ===
+RE_Z = BASE_Z + BODY_H + ROD_LEN + 0.030
+ball = translate(trimesh.creation.icosphere(radius=0.028), 0, 0, RE_Z)
+add(ball, steel)
+hole = trimesh.creation.cylinder(0.011, 0.050)
+hole.apply_transform(trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0]))
+hole = translate(hole, 0, 0, RE_Z)
+add(hole, dark_metal)
 
-# === Combine and export ===
+# === 5. Servo motor ===
+MOTOR_R = 0.036
+MOTOR_L = 0.120
+motor_y = 0
+motor_x = BODY_W/2 + MOTOR_L/2 + 0.025
+motor_z = BASE_Z + BODY_H * 0.45
+add(cyl_x(MOTOR_R, MOTOR_L, motor_x, motor_y, motor_z), black_plastic)
+add(cyl_x(0.042, 0.010, motor_x + MOTOR_L/2 - 0.005, motor_y, motor_z), dark_metal)
+add(cyl_x(0.030, 0.008, motor_x - MOTOR_L/2 + 0.004, motor_y, motor_z), dark_metal)
+
+# Motor connector
+conn = trimesh.creation.box([0.025, 0.020, 0.030])
+add(translate(conn, motor_x + MOTOR_L/2 - 0.015, motor_y - MOTOR_R - 0.005, motor_z), dark_metal)
+
+# Cooling fins
+for i in range(5):
+    fx = motor_x - MOTOR_L/2 + 0.02 + i * 0.022
+    add(cyl_x(MOTOR_R + 0.001, 0.003, fx, motor_y, motor_z), dark_metal)
+
+# === 6. Gearbox ===
+GBX_R = 0.028
+GBX_L = 0.040
+gbx_x = BODY_W/2 + GBX_L/2 + 0.008
+add(cyl_x(GBX_R, GBX_L, gbx_x, motor_y, motor_z), dark_metal)
+add(cyl_x(0.034, 0.008, BODY_W/2 + 0.004, motor_y, motor_z), steel)
+
+# === 7. Cable ===
+cable_path = [
+    (motor_x + MOTOR_L/2, motor_y - MOTOR_R * 0.5, motor_z + 0.02),
+    (motor_x + MOTOR_L/2 + 0.015, motor_y - MOTOR_R * 0.5, motor_z - 0.02),
+    (motor_x + MOTOR_L/2 + 0.010, motor_y - MOTOR_R * 0.5, motor_z - 0.06),
+    (motor_x + MOTOR_L/2 + 0.020, motor_y - MOTOR_R * 0.5, motor_z - 0.10),
+]
+for i in range(len(cable_path) - 1):
+    p1 = np.array(cable_path[i])
+    p2 = np.array(cable_path[i+1])
+    mid = (p1 + p2) / 2
+    length = np.linalg.norm(p2 - p1)
+    seg = trimesh.creation.cylinder(0.003, length)
+    direction = p2 - p1
+    direction_norm = direction / np.linalg.norm(direction)
+    axis = np.array([0, 0, 1])
+    rot_vec = np.cross(axis, direction_norm)
+    if np.linalg.norm(rot_vec) > 0.001:
+        angle = np.arccos(np.clip(np.dot(axis, direction_norm), -1, 1))
+        rot = trimesh.transformations.rotation_matrix(angle, rot_vec)
+        seg.apply_transform(rot)
+    seg = translate(seg, mid[0], mid[1], mid[2])
+    add(seg, rubber)
+
+# === Export ===
 combined = trimesh.util.concatenate(meshes)
-combined.export("/home/user/Doubao/chats/38441126925920258/public/models/electric-cylinder.glb")
-print(f"GLB exported: {len(meshes)} parts")
+out = "/home/user/Doubao/chats/38441126925920258/public/models/electric-cylinder.glb"
+combined.export(out)
+print(f"Exported: {len(meshes)} parts -> {out}")
+import os
+print(f"Size: {os.path.getsize(out)/1024:.0f} KB")
 print(f"Bounds: {combined.bounds}")
