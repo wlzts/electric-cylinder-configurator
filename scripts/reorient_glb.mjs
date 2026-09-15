@@ -10,8 +10,10 @@ await io.registerDependencies({
   'draco3d.encoder': await draco3d.createEncoderModule(),
 });
 
-// Rz(90deg) column-major: maps axis X -> Y
-const R = [0, 1, 0, 0, -1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+// Rz(90deg) column-major: maps +X -> +Y (rod up for COZE, whose rod is at +X)
+const R_POS = [0, 1, 0, 0, -1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+// Rz(-90deg): maps -X -> +Y (rod up for DMC160, whose rod is at -X)
+const R_NEG = [0, -1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
 
 function multiply(Rm, Mm) {
   const out = new Array(16);
@@ -28,11 +30,11 @@ function multiply(Rm, Mm) {
 }
 
 const files = [
-  ['public/models/electric-cylinder.glb', 'public/models/electric-cylinder.v2.glb'],
-  ['public/models/dmc160.glb', 'public/models/dmc160.v2.glb'],
+  ['/home/user/.doubao/agent_mode/workspace/.sessions/38441126925920258/attachments/COZE-40-1205-S50-D-M-2M-B20_0.glb', 'public/models/electric-cylinder.glb', R_POS],
+  ['/home/user/.doubao/agent_mode/workspace/.sessions/38441126925920258/attachments/DMC160-R01-L20S100-D030-IV440015-FM-S3-P10_0140.glb', 'public/models/dmc160.glb', R_NEG],
 ];
 
-for (const [inp, outp] of files) {
+for (const [inp, outp, R] of files) {
   const doc = await io.read(inp);
   for (const scene of doc.getRoot().listScenes()) {
     for (const node of scene.listChildren()) {
