@@ -18,8 +18,8 @@ interface ViewerModel {
 }
 
 const MODELS: ViewerModel[] = [
-  { id: 'coze40', label: 'COZE40 滚珠丝杠型', file: 'models/electric-cylinder.glb' },
-  { id: 'dmc160', label: 'DMC160 同步带型', file: 'models/dmc160.glb' },
+  { id: 'coze40', label: 'COZE40 滚珠丝杠型', file: 'models/electric-cylinder.glb?v=2' },
+  { id: 'dmc160', label: 'DMC160 同步带型', file: 'models/dmc160.glb?v=2' },
 ];
 
 export function Cylinder3DViewer() {
@@ -40,6 +40,9 @@ export function Cylinder3DViewer() {
       el = document.createElement('model-viewer') as unknown as ModelViewerElement;
       el.setAttribute('camera-controls', '');
       el.setAttribute('touch-action', 'pan-y');
+      // 放开角度钳制，支持真正 360° 环绕和俯仰
+      el.setAttribute('min-camera-orbit', '-Infinity 0deg auto');
+      el.setAttribute('max-camera-orbit', 'Infinity 180deg auto');
       el.setAttribute('auto-rotate', '');
       el.setAttribute('auto-rotate-delay', '1000');
       el.setAttribute('rotation-per-second', '24deg');

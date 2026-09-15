@@ -19,7 +19,7 @@ interface ProductVisualizerProps {
 
 export function ProductVisualizer({ config, className, showLabels = true }: ProductVisualizerProps) {
   const { t } = useI18n();
-  const [view, setView] = useState<ViewMode>('side');
+  const [view, setView] = useState<ViewMode>('3d');
 
   const cyl = cylinderSeries.find((c) => c.id === config.cylinderId);
   const motor = motors.find((m) => m.id === config.motorId);
