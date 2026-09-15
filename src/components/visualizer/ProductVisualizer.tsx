@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import type { Configuration } from '@/types';
-import { cylinderSeries, motors, ballScrews, timingBelts } from '@/data';
+import { cylinderSeries, motors, ballScrews, timingBelts, gearboxes } from '@/data';
 import { useI18n, type TranslationKey } from '@/i18n';
 import { cn } from '@/lib/utils';
 
@@ -25,9 +25,11 @@ export function ProductVisualizer({ config, className, showLabels = true }: Prod
   // Scale based on cylinder size (0=EC40 … 4=EC120)
   const sizeIndex = cyl ? ['EC40', 'EC60', 'EC80', 'EC100', 'EC120'].indexOf(cyl.id) : 2;
   const bodyH = 240 + sizeIndex * 22;   // vertical body height
-  const bodyW = 52;                     // body width (px in SVG units)
+  const bodyW = 62;                     // 方缸筒 width (px in SVG units)
   const motorH = 56 + (motor ? Math.min(motor.power / 40, 40) : 16);
   const motorW = 44;
+  const hasGearbox = !!config.gearboxId;
+  const gb = gearboxes.find((g) => g.id === config.gearboxId);
 
   const views: { id: ViewMode; label: string }[] = [
     { id: 'side', label: t('view_side') },
@@ -133,6 +135,8 @@ export function ProductVisualizer({ config, className, showLabels = true }: Prod
               config={config}
               showLabels={showLabels}
               t={t}
+              hasGearbox={hasGearbox}
+              gbRatio={gb?.ratio}
             />
           )}
           {view === 'transmission' && (
@@ -181,6 +185,8 @@ function VerticalView({
   config,
   showLabels,
   t,
+  hasGearbox,
+  gbRatio,
 }: {
   bodyW: number;
   bodyH: number;
@@ -189,6 +195,8 @@ function VerticalView({
   config: Configuration;
   showLabels: boolean;
   t: (k: TranslationKey) => string;
+  hasGearbox: boolean;
+  gbRatio?: number;
 }) {
   const cx = 135;                      // centre x of the cylinder body
   const bodyX = cx - bodyW / 2;
@@ -198,8 +206,13 @@ function VerticalView({
 
   const hasBellows = config.accessories.includes('ACC-BELLOWS');
   const hasCover = config.accessories.includes('ACC-COVER');
-  const motorX = bodyX + bodyW + 6;
+  // Gearbox sits between motor and body; motor shifts right if gearbox present
+  const gbxW = hasGearbox ? 18 : 0;
+  const motorX = bodyX + bodyW + 6 + gbxW;
   const motorY = bodyBottom - motorH - 4;
+  const gbxX = bodyX + bodyW + 6;
+  const gbxY = motorY + motorH * 0.25;
+  const gbxH = motorH * 0.5;
 
   return (
     <g filter="url(#softShadow)">
@@ -233,8 +246,17 @@ function VerticalView({
         <rect x={motorX + 4} y={motorY + 6} width={motorW - 8} height="6" rx="1" fill="#3A3A38" />
         {/* Connector plug */}
         <rect x={motorX + motorW - 4} y={motorY + 18} width="8" height="14" rx="1" fill="#2A2A28" />
-        {/* Motor flange to body */}
-        <rect x={bodyX + bodyW - 2} y={motorY + motorH * 0.3} width="8" height={motorH * 0.55} rx="1" fill="#2A2A28" />
+        {/* Gearbox (中大力德) between motor and body */}
+        {hasGearbox && (
+          <g>
+            <rect x={gbxX} y={gbxY} width={gbxW} height={gbxH} rx="1.5" fill="#2A2A28" stroke="#111" strokeWidth="0.5" />
+            <text x={gbxX + gbxW / 2} y={gbxY - 4} textAnchor="middle" style={{ fontSize: '7px', fill: '#888' }}>
+              {gbRatio}:1
+            </text>
+          </g>
+        )}
+        {/* Motor flange to gearbox/body */}
+        <rect x={hasGearbox ? gbxX + gbxW - 2 : bodyX + bodyW - 2} y={motorY + motorH * 0.3} width="8" height={motorH * 0.55} rx="1" fill="#2A2A28" />
         {/* Cable coiled beside motor */}
         <path
           d={`M ${motorX + motorW - 2} ${motorY + 32}
@@ -250,7 +272,7 @@ function VerticalView({
         />
         {showLabels && (
           <text x={motorX + motorW / 2} y={motorY - 8} textAnchor="middle" className="fill-muted" style={{ fontSize: '9px' }}>
-            {t('label_motor')}
+            {hasGearbox ? t('label_motor_gbx') : t('label_motor')}
           </text>
         )}
       </motion.g>
@@ -262,29 +284,34 @@ function VerticalView({
         transition={{ duration: 0.5 }}
         style={{ transformOrigin: `${cx}px ${bodyBottom}px` }}
       >
+        {/* 方缸筒: square extrusion body with flat sides */}
         <rect
           x={bodyX}
           y={bodyTop}
           width={bodyW}
           height={bodyH}
-          rx="2"
+          rx="1"
           fill="url(#alu)"
-          stroke="#888"
-          strokeWidth="0.5"
+          stroke="#777"
+          strokeWidth="0.8"
         />
-        {/* Extrusion grooves (vertical flutes) */}
-        {[0.25, 0.5, 0.75].map((f) => (
-          <line
-            key={f}
-            x1={bodyX + bodyW * f}
-            y1={bodyTop + 6}
-            x2={bodyX + bodyW * f}
-            y2={bodyBottom - 6}
-            stroke="#999"
-            strokeWidth="0.6"
-            opacity="0.6"
-          />
-        ))}
+        {/* Corner bolt holes (square tube特征) */}
+        <circle cx={bodyX + 6} cy={bodyTop + 10} r="1.8" fill="#888" />
+        <circle cx={bodyX + bodyW - 6} cy={bodyTop + 10} r="1.8" fill="#888" />
+        <circle cx={bodyX + 6} cy={bodyBottom - 10} r="1.8" fill="#888" />
+        <circle cx={bodyX + bodyW - 6} cy={bodyBottom - 10} r="1.8" fill="#888" />
+        {/* Mounting slot on left flat side */}
+        <rect x={bodyX + 2} y={bodyTop + bodyH * 0.25} width="3" height={bodyH * 0.3} rx="1" fill="#999" opacity="0.5" />
+        {/* Center groove */}
+        <line
+          x1={cx}
+          y1={bodyTop + 8}
+          x2={cx}
+          y2={bodyBottom - 8}
+          stroke="#999"
+          strokeWidth="0.8"
+          opacity="0.5"
+        />
         {/* Top black end cap */}
         <rect x={bodyX - 2} y={bodyTop - 6} width={bodyW + 4} height="10" rx="1.5" fill="url(#darkCap)" />
         {/* Bottom transition to base */}

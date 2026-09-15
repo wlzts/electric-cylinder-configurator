@@ -1,12 +1,12 @@
 import type { CylinderSeries } from '@/types';
 
-// DEMO engineering data. Final values are subject to verified product specifications.
+// 演示工程数据。方缸筒电缸系列。最终值以厂家实际产品规格为准。
 export const cylinderSeries: CylinderSeries[] = [
   {
     id: 'EC40',
     model: 'EC40',
     name: 'EC40',
-    positioning: 'Compact Motion',
+    positioning: '紧凑型·轻载',
     maxPayload: 15,
     maxThrust: 600,
     maxSpeed: 1200,
@@ -16,13 +16,13 @@ export const cylinderSeries: CylinderSeries[] = [
     compatibleMotorPowers: [100, 200, 400],
     protection: 'IP54',
     weight: 3.2,
-    recommendedApplication: 'Light assembly, pick & place, lab automation',
+    recommendedApplication: '轻载装配、拾取放置、实验室自动化',
   },
   {
     id: 'EC60',
     model: 'EC60',
     name: 'EC60',
-    positioning: 'General Automation',
+    positioning: '通用型',
     maxPayload: 40,
     maxThrust: 1500,
     maxSpeed: 1500,
@@ -32,13 +32,13 @@ export const cylinderSeries: CylinderSeries[] = [
     compatibleMotorPowers: [200, 400, 750],
     protection: 'IP54',
     weight: 6.8,
-    recommendedApplication: 'General purpose positioning, conveying, packaging',
+    recommendedApplication: '通用定位、输送、包装设备',
   },
   {
     id: 'EC80',
     model: 'EC80',
     name: 'EC80',
-    positioning: 'High Force',
+    positioning: '高推力型',
     maxPayload: 100,
     maxThrust: 3500,
     maxSpeed: 1200,
@@ -48,13 +48,13 @@ export const cylinderSeries: CylinderSeries[] = [
     compatibleMotorPowers: [400, 750, 1000],
     protection: 'IP65',
     weight: 14.5,
-    recommendedApplication: 'Pressing, clamping, high-load transfer',
+    recommendedApplication: '压装、夹紧、重载移送',
   },
   {
     id: 'EC100',
     model: 'EC100',
     name: 'EC100',
-    positioning: 'Heavy Duty',
+    positioning: '重载型',
     maxPayload: 250,
     maxThrust: 8000,
     maxSpeed: 800,
@@ -64,13 +64,13 @@ export const cylinderSeries: CylinderSeries[] = [
     compatibleMotorPowers: [750, 1000, 1500, 2000],
     protection: 'IP65',
     weight: 28.0,
-    recommendedApplication: 'Heavy load handling, machining feed, automotive',
+    recommendedApplication: '重载搬运、机床进给、汽车制造',
   },
   {
     id: 'EC120',
     model: 'EC120',
     name: 'EC120',
-    positioning: 'Ultra Heavy',
+    positioning: '超重载型',
     maxPayload: 500,
     maxThrust: 15000,
     maxSpeed: 600,
@@ -80,6 +80,6 @@ export const cylinderSeries: CylinderSeries[] = [
     compatibleMotorPowers: [1500, 2000, 3000],
     protection: 'IP67',
     weight: 52.0,
-    recommendedApplication: 'Ultra high force pressing, forming, heavy industry',
+    recommendedApplication: '超高推力压装、成型、重型工业',
   },
 ];

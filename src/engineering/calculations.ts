@@ -8,7 +8,7 @@ import type {
   CylinderSeries,
 } from '@/types';
 import { ENGINEERING_CONFIG } from './config';
-import { ballScrews, timingBelts, motors, cylinderSeries, drives } from '@/data';
+import { ballScrews, timingBelts, motors, gearboxes, cylinderSeries, drives } from '@/data';
 
 // ============================================================================
 // DEMO ENGINEERING CALCULATION LAYER
@@ -53,19 +53,27 @@ export function calculateMotorTorque(
     ENGINEERING_CONFIG.efficiency[config.transmission ?? 'ball_screw'] ??
     ENGINEERING_CONFIG.efficiency.ball_screw;
 
+  let outputTorque: number | null;
   if (config.transmission === 'timing_belt') {
     const belt = timingBelts.find((b) => b.id === config.beltId);
     if (!belt) return null;
-    // Assume drive pulley = 20 teeth (demo). radius = teeth*pitch/(2π) in mm -> m
     const pulleyTeeth = 20;
     const radiusM = (pulleyTeeth * belt.pitchMm) / (2 * Math.PI) / 1000;
-    return safe((thrust * radiusM) / eff);
+    outputTorque = safe((thrust * radiusM) / eff);
+  } else {
+    const screw = ballScrews.find((s) => s.id === config.screwId);
+    if (!screw) return null;
+    const leadM = screw.lead / 1000;
+    outputTorque = safe((thrust * leadM) / (2 * Math.PI * eff));
   }
 
-  const screw = ballScrews.find((s) => s.id === config.screwId);
-  if (!screw) return null;
-  const leadM = screw.lead / 1000; // mm -> m
-  return safe((thrust * leadM) / (2 * Math.PI * eff));
+  if (outputTorque === null) return null;
+  // Apply gearbox reduction: motor torque = output torque / (ratio * gbxEff)
+  if (config.gearboxId) {
+    const gb = gearboxes.find((g) => g.id === config.gearboxId);
+    if (gb) return safe(outputTorque / (gb.ratio * gb.efficiency));
+  }
+  return outputTorque;
 }
 
 // ---------------------------------------------------------------------------
@@ -78,17 +86,27 @@ export function calculateMotorRPM(
   config: Configuration,
 ): number | null {
   const speed = Math.max(0, req.targetSpeed);
+  let outputRPM: number | null;
   if (config.transmission === 'timing_belt') {
     const belt = timingBelts.find((b) => b.id === config.beltId);
     if (!belt) return null;
     const pulleyTeeth = 20;
     const circumferenceMm = pulleyTeeth * belt.pitchMm;
-    return safe((speed / circumferenceMm) * 60);
+    outputRPM = safe((speed / circumferenceMm) * 60);
+  } else {
+    const screw = ballScrews.find((s) => s.id === config.screwId);
+    if (!screw) return null;
+    if (screw.lead <= 0) return null;
+    outputRPM = safe((speed * 60) / screw.lead);
   }
-  const screw = ballScrews.find((s) => s.id === config.screwId);
-  if (!screw) return null;
-  if (screw.lead <= 0) return null;
-  return safe((speed * 60) / screw.lead);
+
+  if (outputRPM === null) return null;
+  // Apply gearbox: motor spins faster by ratio
+  if (config.gearboxId) {
+    const gb = gearboxes.find((g) => g.id === config.gearboxId);
+    if (gb) return safe(outputRPM * gb.ratio);
+  }
+  return outputRPM;
 }
 
 // ---------------------------------------------------------------------------
@@ -342,6 +360,7 @@ export function recommendConfiguration(req: ApplicationRequirement): Configurati
       screwId: pickScrew(cylId).id,
       beltId: null,
       motorId: motor.id,
+      gearboxId: null,
       driveId: drive,
       encoderId: motor.encoderOptions.includes('ENC-23BIT') ? 'ENC-23BIT' : motor.encoderOptions[0],
       brake: req.orientation === 'vertical' || req.brakeRequired,

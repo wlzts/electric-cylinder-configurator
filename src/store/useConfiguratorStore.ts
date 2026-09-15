@@ -24,6 +24,7 @@ export const DEFAULT_CONFIG: Configuration = {
   screwId: null,
   beltId: null,
   motorId: null,
+  gearboxId: null,
   driveId: null,
   encoderId: null,
   brake: false,

@@ -33,7 +33,7 @@ export function Compare() {
     applyRecommendation({
       cylinderId: cylId,
       transmission: cyl.compatibleTransmissions[0],
-      screwId: null, beltId: null, motorId: null, driveId: null,
+      screwId: null, beltId: null, motorId: null, gearboxId: null, driveId: null,
       encoderId: null, brake: false, sensors: [], accessories: [],
       communicationId: 'ETHERCAT',
       stroke: Math.min(500, cyl.maxStroke),

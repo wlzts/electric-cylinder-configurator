@@ -4,6 +4,7 @@ import {
   ballScrews,
   timingBelts,
   motors,
+  gearboxes,
   drives,
   encoders,
   sensors,
@@ -18,8 +19,8 @@ export function generateBOM(config: Configuration): BOMItem[] {
   if (cyl) {
     bom.push({
       partNumber: `${cyl.model}-BODY`,
-      description: `Cylinder Body — ${cyl.positioning}`,
-      brand: 'Generic',
+      description: `方缸筒本体 — ${cyl.positioning}`,
+      brand: '自研',
       qty: 1,
       status: 'included',
     });
@@ -30,8 +31,8 @@ export function generateBOM(config: Configuration): BOMItem[] {
     if (belt) {
       bom.push({
         partNumber: belt.id,
-        description: `Timing Belt — ${belt.series} ${belt.pitch} ${belt.width}mm ${belt.material}`,
-        brand: 'Generic',
+        description: `同步带 — ${belt.series} ${belt.pitch} ${belt.width}mm ${belt.material}`,
+        brand: '自研',
         qty: 1,
         status: 'included',
       });
@@ -41,8 +42,8 @@ export function generateBOM(config: Configuration): BOMItem[] {
     if (screw) {
       bom.push({
         partNumber: screw.model,
-        description: `Ball Screw — Ø${screw.diameter} Lead ${screw.lead} ${screw.accuracy}`,
-        brand: 'Generic',
+        description: `滚珠丝杠 — Ø${screw.diameter} 导程 ${screw.lead} ${screw.accuracy}`,
+        brand: '自研',
         qty: 1,
         status: 'included',
       });
@@ -53,8 +54,19 @@ export function generateBOM(config: Configuration): BOMItem[] {
   if (motor) {
     bom.push({
       partNumber: motor.model,
-      description: `${motor.name} — ${motor.power}W${config.brake ? ' with Brake' : ''}`,
+      description: `${motor.name} — ${motor.power}W${config.brake ? ' 带抱闸' : ''}`,
       brand: motor.brand,
+      qty: 1,
+      status: 'included',
+    });
+  }
+
+  const gearbox = gearboxes.find((g) => g.id === config.gearboxId);
+  if (gearbox) {
+    bom.push({
+      partNumber: gearbox.model,
+      description: `精密行星减速机 — ${gearbox.name} 速比 ${gearbox.ratio}:1 回程间隙 ${gearbox.backlash}′`,
+      brand: gearbox.brand,
       qty: 1,
       status: 'included',
     });
@@ -75,8 +87,8 @@ export function generateBOM(config: Configuration): BOMItem[] {
   if (encoder) {
     bom.push({
       partNumber: encoder.id,
-      description: `Encoder — ${encoder.name} (${encoder.resolution})`,
-      brand: 'Generic',
+      description: `编码器 — ${encoder.name} (${encoder.resolution})`,
+      brand: '自研',
       qty: 1,
       status: 'included',
     });
@@ -88,7 +100,7 @@ export function generateBOM(config: Configuration): BOMItem[] {
       bom.push({
         partNumber: s.id,
         description: s.name,
-        brand: 'Generic',
+        brand: '自研',
         qty: 1,
         status: 'included',
       });
@@ -101,7 +113,7 @@ export function generateBOM(config: Configuration): BOMItem[] {
       bom.push({
         partNumber: a.id,
         description: `${a.name} — ${a.description}`,
-        brand: 'Generic',
+        brand: '自研',
         qty: 1,
         status: 'optional',
       });
@@ -112,8 +124,8 @@ export function generateBOM(config: Configuration): BOMItem[] {
   if (proto) {
     bom.push({
       partNumber: proto.code,
-      description: `Communication — ${proto.name}`,
-      brand: 'Generic',
+      description: `通讯 — ${proto.name}`,
+      brand: '自研',
       qty: 1,
       status: 'included',
     });

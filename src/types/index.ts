@@ -104,6 +104,19 @@ export interface Motor {
   inertia: number; // kg·cm² (demo)
 }
 
+export interface Gearbox {
+  id: ID;
+  brand: string;
+  model: string;
+  name: string;
+  ratio: number; // reduction ratio
+  ratedTorque: number; // Nm output
+  maxTorque: number; // Nm
+  backlash: number; // arc-min
+  compatibleMotorFlanges: string[]; // motor frame sizes it mounts to
+  efficiency: number; // 0..1
+}
+
 export interface Drive {
   id: ID;
   brand: string;
@@ -197,6 +210,7 @@ export interface Configuration {
   screwId: ID | null;
   beltId: ID | null;
   motorId: ID | null;
+  gearboxId: ID | null;
   driveId: ID | null;
   encoderId: ID | null;
   brake: boolean;
