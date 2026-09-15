@@ -38,8 +38,8 @@ interface ModelConfig {
 }
 
 const MODELS: ModelConfig[] = [
-  { id: 'coze40', label: 'COZE40 滚珠丝杠型', file: 'models/electric-cylinder.glb?v=11', center: [-0.051, 0, 0.0065] },
-  { id: 'dmc160', label: 'DMC160 同步带型', file: 'models/dmc160.glb?v=11', center: [-0.222, -0.107, 0] },
+  { id: 'coze40', label: 'COZE40 滚珠丝杠型', file: 'models/electric-cylinder.glb?v=12', center: [-0.051, 0, 0.0065] },
+  { id: 'dmc160', label: 'DMC160 同步带型', file: 'models/dmc160.glb?v=12', center: [-0.222, -0.107, 0] },
 ];
 
 function CylinderModel({
@@ -97,11 +97,11 @@ function CylinderModel({
       let targetX = originalX;
 
       if (exploded) {
-        if (partKey === 'rod') targetX = originalX + 40;
-        if (partKey === 'motor') targetX = originalX - 30;
-        if (partKey === 'body_1') targetX = originalX + 20;
-        if (partKey === 'belt') targetX = originalX + 15;
-        if (partKey === 'end') targetX = originalX - 15;
+        if (partKey === 'rod') targetX = originalX + 400;
+        if (partKey === 'motor') targetX = originalX - 300;
+        if (partKey === 'body_1') targetX = originalX + 200;
+        if (partKey === 'belt') targetX = originalX + 150;
+        if (partKey === 'end') targetX = originalX - 150;
       }
 
       if (partKey === 'rod' && !exploded) {
@@ -226,7 +226,7 @@ export function Cylinder3DViewer() {
         <OrbitControls
           enablePan={false}
           minDistance={0.3}
-          maxDistance={2.0}
+          maxDistance={5.0}
           target={[0, 0, 0]}
         />
       </Canvas>
