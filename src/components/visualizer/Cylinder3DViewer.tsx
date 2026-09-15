@@ -18,8 +18,8 @@ interface ViewerModel {
 }
 
 const MODELS: ViewerModel[] = [
-  { id: 'coze40', label: 'COZE40 滚珠丝杠型', file: 'models/electric-cylinder.glb?v=2' },
-  { id: 'dmc160', label: 'DMC160 同步带型', file: 'models/dmc160.glb?v=2' },
+  { id: 'coze40', label: 'COZE40 滚珠丝杠型', file: 'models/electric-cylinder.glb?v=3' },
+  { id: 'dmc160', label: 'DMC160 同步带型', file: 'models/dmc160.glb?v=3' },
 ];
 
 export function Cylinder3DViewer() {
