@@ -1,19 +1,21 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Cpu, Menu, X } from 'lucide-react';
+import { Cpu, Menu, X, Languages } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
-
-const navItems = [
-  { to: '/', label: 'Home' },
-  { to: '/configurator', label: 'Configurator' },
-  { to: '/compare', label: 'Compare' },
-  { to: '/review', label: 'Review' },
-  { to: '/quote', label: 'Quote' },
-];
+import { useI18n } from '@/i18n';
 
 export function Header() {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { t, lang, setLang } = useI18n();
+
+  const navItems = [
+    { to: '/', label: t('nav_home') },
+    { to: '/configurator', label: t('nav_configurator') },
+    { to: '/compare', label: t('nav_compare') },
+    { to: '/review', label: t('nav_review') },
+    { to: '/quote', label: t('nav_quote') },
+  ];
 
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-bg/85 backdrop-blur-md">
@@ -23,7 +25,7 @@ export function Header() {
             <Cpu size={16} />
           </span>
           <span className="text-sm font-semibold tracking-tight">
-            ECC<span className="text-muted font-normal"> · Configurator</span>
+            ECC<span className="text-muted font-normal"> · {lang === 'zh' ? '电缸配置器' : 'Configurator'}</span>
           </span>
         </Link>
 
@@ -45,15 +47,28 @@ export function Header() {
           })}
         </nav>
 
-        <button
-          type="button"
-          className="md:hidden rounded-lg p-2 text-ink hover:bg-ink/5"
-          onClick={() => setMobileOpen((v) => !v)}
-          aria-label="Toggle menu"
-          aria-expanded={mobileOpen}
-        >
-          {mobileOpen ? <X size={18} /> : <Menu size={18} />}
-        </button>
+        <div className="flex items-center gap-1">
+          {/* Language toggle */}
+          <button
+            type="button"
+            onClick={() => setLang(lang === 'zh' ? 'en' : 'zh')}
+            className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted hover:bg-ink/5 hover:text-ink"
+            aria-label={lang === 'zh' ? 'Switch to English' : '切换到中文'}
+          >
+            <Languages size={14} />
+            <span className="font-semibold">{lang === 'zh' ? 'EN' : '中文'}</span>
+          </button>
+
+          <button
+            type="button"
+            className="md:hidden rounded-lg p-2 text-ink hover:bg-ink/5"
+            onClick={() => setMobileOpen((v) => !v)}
+            aria-label="Toggle menu"
+            aria-expanded={mobileOpen}
+          >
+            {mobileOpen ? <X size={18} /> : <Menu size={18} />}
+          </button>
+        </div>
       </div>
 
       {mobileOpen && (

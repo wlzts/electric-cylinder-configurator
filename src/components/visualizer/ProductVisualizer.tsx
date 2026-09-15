@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import type { Configuration } from '@/types';
 import { cylinderSeries, motors, ballScrews, timingBelts } from '@/data';
+import { useI18n, type TranslationKey } from '@/i18n';
 import { cn } from '@/lib/utils';
 
 type ViewMode = 'side' | 'transmission' | 'exploded';
@@ -13,6 +14,7 @@ interface ProductVisualizerProps {
 }
 
 export function ProductVisualizer({ config, className, showLabels = true }: ProductVisualizerProps) {
+  const { t } = useI18n();
   const [view, setView] = useState<ViewMode>('side');
 
   const cyl = cylinderSeries.find((c) => c.id === config.cylinderId);
@@ -20,16 +22,17 @@ export function ProductVisualizer({ config, className, showLabels = true }: Prod
   const screw = ballScrews.find((s) => s.id === config.screwId);
   const belt = timingBelts.find((b) => b.id === config.beltId);
 
-  // Scale factor based on cylinder size
+  // Scale based on cylinder size (0=EC40 … 4=EC120)
   const sizeIndex = cyl ? ['EC40', 'EC60', 'EC80', 'EC100', 'EC120'].indexOf(cyl.id) : 2;
-  const bodyHeight = 40 + sizeIndex * 8;
-  const bodyWidth = 260 + sizeIndex * 20;
-  const motorSize = 28 + (motor ? Math.min(motor.power / 100, 30) : 10);
+  const bodyH = 240 + sizeIndex * 22;   // vertical body height
+  const bodyW = 52;                     // body width (px in SVG units)
+  const motorH = 56 + (motor ? Math.min(motor.power / 40, 40) : 16);
+  const motorW = 44;
 
   const views: { id: ViewMode; label: string }[] = [
-    { id: 'side', label: 'Side View' },
-    { id: 'transmission', label: 'Transmission' },
-    { id: 'exploded', label: 'Exploded' },
+    { id: 'side', label: t('view_side') },
+    { id: 'transmission', label: t('view_transmission') },
+    { id: 'exploded', label: t('view_exploded') },
   ];
 
   return (
@@ -50,44 +53,94 @@ export function ProductVisualizer({ config, className, showLabels = true }: Prod
         ))}
       </div>
 
-      <div className="relative flex items-center justify-center rounded-card border border-line bg-gradient-to-b from-surface to-bg/50 p-6">
+      <div className="relative flex items-center justify-center overflow-hidden rounded-card border border-line">
         <svg
-          viewBox="0 0 420 200"
-          className="w-full max-w-xl"
+          viewBox="0 0 300 440"
+          className="w-full max-w-sm"
           role="img"
           aria-label="Electric cylinder product visualization"
         >
           <defs>
-            <linearGradient id="bodyGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#D8D8D4" />
-              <stop offset="50%" stopColor="#C4C4C0" />
-              <stop offset="100%" stopColor="#B0B0AC" />
+            {/* Studio gradient background */}
+            <radialGradient id="studioBg" cx="50%" cy="35%" r="75%">
+              <stop offset="0%" stopColor="#FFFFFF" />
+              <stop offset="60%" stopColor="#EDEDEB" />
+              <stop offset="100%" stopColor="#D8D8D5" />
+            </radialGradient>
+            {/* Brushed aluminium — vertical sheen */}
+            <linearGradient id="alu" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor="#9A9A96" />
+              <stop offset="18%" stopColor="#C8C8C4" />
+              <stop offset="35%" stopColor="#E8E8E4" />
+              <stop offset="50%" stopColor="#F2F2EE" />
+              <stop offset="65%" stopColor="#D0D0CC" />
+              <stop offset="85%" stopColor="#A8A8A4" />
+              <stop offset="100%" stopColor="#888884" />
             </linearGradient>
-            <linearGradient id="motorGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#3A3A38" />
-              <stop offset="100%" stopColor="#1A1A18" />
+            {/* Dark end cap */}
+            <linearGradient id="darkCap" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#2A2A28" />
+              <stop offset="100%" stopColor="#111110" />
             </linearGradient>
-            <linearGradient id="screwGrad" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="#888" />
-              <stop offset="50%" stopColor="#CCC" />
-              <stop offset="100%" stopColor="#888" />
+            {/* Black motor body */}
+            <linearGradient id="motorBody" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor="#1A1A19" />
+              <stop offset="40%" stopColor="#333331" />
+              <stop offset="70%" stopColor="#1E1E1D" />
+              <stop offset="100%" stopColor="#0E0E0D" />
             </linearGradient>
+            {/* Steel joint (rod end) */}
+            <radialGradient id="steelJoint" cx="38%" cy="35%" r="70%">
+              <stop offset="0%" stopColor="#F0F0EC" />
+              <stop offset="45%" stopColor="#B8B8B4" />
+              <stop offset="80%" stopColor="#7A7A76" />
+              <stop offset="100%" stopColor="#555552" />
+            </radialGradient>
+            {/* Platform surface */}
+            <linearGradient id="platform" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#F5F5F2" />
+              <stop offset="100%" stopColor="#E2E2DE" />
+            </linearGradient>
+            {/* Drop shadow */}
+            <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur in="SourceAlpha" stdDeviation="4" />
+              <feOffset dx="0" dy="3" result="offsetblur" />
+              <feComponentTransfer><feFuncA type="linear" slope="0.28" /></feComponentTransfer>
+              <feMerge><feMergeNode /><feMergeNode in="SourceGraphic" /></feMerge>
+            </filter>
           </defs>
 
+          {/* Studio backdrop */}
+          <rect x="0" y="0" width="300" height="440" fill="url(#studioBg)" />
+          {/* Side softbox lights (subtle) */}
+          <rect x="0" y="60" width="18" height="180" fill="#FFFFFF" opacity="0.55" rx="3" />
+          <rect x="282" y="60" width="18" height="180" fill="#FFFFFF" opacity="0.45" rx="3" />
+          {/* Top light strip */}
+          <rect x="60" y="0" width="180" height="14" fill="#FFFFFF" opacity="0.7" rx="2" />
+
+          {/* Platform */}
+          <rect x="20" y="395" width="260" height="18" fill="url(#platform)" rx="2" />
+          <rect x="20" y="413" width="260" height="22" fill="#D8D8D4" rx="1" />
+          {/* Shadow on platform */}
+          <ellipse cx="148" cy="396" rx="60" ry="5" fill="#000" opacity="0.12" />
+
           {view === 'side' && (
-            <SideView
-              bodyWidth={bodyWidth}
-              bodyHeight={bodyHeight}
-              motorSize={motorSize}
+            <VerticalView
+              bodyW={bodyW}
+              bodyH={bodyH}
+              motorW={motorW}
+              motorH={motorH}
               config={config}
               showLabels={showLabels}
+              t={t}
             />
           )}
           {view === 'transmission' && (
             <TransmissionView
-              bodyWidth={bodyWidth}
-              bodyHeight={bodyHeight}
-              motorSize={motorSize}
+              bodyW={bodyW}
+              bodyH={bodyH}
+              motorW={motorW}
+              motorH={motorH}
               config={config}
               screw={screw}
               belt={belt}
@@ -95,21 +148,22 @@ export function ProductVisualizer({ config, className, showLabels = true }: Prod
           )}
           {view === 'exploded' && (
             <ExplodedView
-              bodyWidth={bodyWidth}
-              bodyHeight={bodyHeight}
-              motorSize={motorSize}
+              bodyW={bodyW}
+              motorW={motorW}
+              motorH={motorH}
               config={config}
+              t={t}
             />
           )}
         </svg>
 
         {/* Spec overlay */}
-        <div className="absolute bottom-3 left-3 flex flex-wrap gap-2 text-2xs text-muted">
+        <div className="absolute bottom-2 left-2 flex flex-wrap gap-1.5 text-2xs text-muted">
           {cyl && <span className="rounded bg-ink/5 px-1.5 py-0.5 num">{cyl.model}</span>}
           {screw && <span className="rounded bg-ink/5 px-1.5 py-0.5 num">Ø{screw.diameter} · L{screw.lead}</span>}
           {belt && <span className="rounded bg-ink/5 px-1.5 py-0.5 num">{belt.pitch} · {belt.width}mm</span>}
           {motor && <span className="rounded bg-ink/5 px-1.5 py-0.5 num">{motor.power}W</span>}
-          <span className="rounded bg-accent/10 px-1.5 py-0.5 text-accent-deep">Demo</span>
+          <span className="rounded bg-accent/10 px-1.5 py-0.5 text-accent-deep">{t('common_demo')}</span>
         </div>
       </div>
     </div>
@@ -117,223 +171,246 @@ export function ProductVisualizer({ config, className, showLabels = true }: Prod
 }
 
 // ---------------------------------------------------------------------------
-function SideView({
-  bodyWidth,
-  bodyHeight,
-  motorSize,
+// Vertical cylinder — matches the reference product photo
+// ---------------------------------------------------------------------------
+function VerticalView({
+  bodyW,
+  bodyH,
+  motorW,
+  motorH,
   config,
   showLabels,
+  t,
 }: {
-  bodyWidth: number;
-  bodyHeight: number;
-  motorSize: number;
+  bodyW: number;
+  bodyH: number;
+  motorW: number;
+  motorH: number;
   config: Configuration;
   showLabels: boolean;
+  t: (k: TranslationKey) => string;
 }) {
-  const cx = 210;
-  const cy = 100;
-  const bodyX = cx - bodyWidth / 2;
-  const bodyY = cy - bodyHeight / 2;
-  const motorX = bodyX + bodyWidth + 8;
+  const cx = 135;                      // centre x of the cylinder body
+  const bodyX = cx - bodyW / 2;
+  const baseY = 388;                   // top of platform
+  const bodyBottom = baseY - 34;       // body sits on black base
+  const bodyTop = bodyBottom - bodyH;  // top of aluminium extrusion
+
   const hasBellows = config.accessories.includes('ACC-BELLOWS');
   const hasCover = config.accessories.includes('ACC-COVER');
+  const motorX = bodyX + bodyW + 6;
+  const motorY = bodyBottom - motorH - 4;
 
   return (
-    <g>
-      {/* Motor */}
+    <g filter="url(#softShadow)">
+      {/* ---- Black mounting base (bottom) ---- */}
+      <motion.g
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+      >
+        <rect x={cx - 48} y={baseY - 34} width="96" height="22" rx="2" fill="url(#darkCap)" />
+        {/* Base side flange */}
+        <rect x={cx - 52} y={baseY - 20} width="104" height="10" rx="1" fill="#1A1A19" />
+        {/* Mounting bolts on base */}
+        <circle cx={cx - 42} cy={baseY - 23} r="3" fill="#444" />
+        <circle cx={cx + 42} cy={baseY - 23} r="3" fill="#444" />
+        <circle cx={cx - 42} cy={baseY - 23} r="1.5" fill="#111" />
+        <circle cx={cx + 42} cy={baseY - 23} r="1.5" fill="#111" />
+        {/* Central hole in base front */}
+        <circle cx={cx} cy={baseY - 13} r="2.5" fill="#0A0A09" />
+      </motion.g>
+
+      {/* ---- Black servo motor on right side ---- */}
       <motion.g
         initial={{ opacity: 0, x: 10 }}
         animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.4 }}
+        transition={{ duration: 0.5, delay: 0.15 }}
       >
-        <rect
-          x={motorX}
-          y={cy - motorSize / 2}
-          width={motorSize * 1.4}
-          height={motorSize}
-          rx="3"
-          fill="url(#motorGrad)"
+        {/* Motor box */}
+        <rect x={motorX} y={motorY} width={motorW} height={motorH} rx="3" fill="url(#motorBody)" />
+        {/* Motor front cap detail */}
+        <rect x={motorX + 4} y={motorY + 6} width={motorW - 8} height="6" rx="1" fill="#3A3A38" />
+        {/* Connector plug */}
+        <rect x={motorX + motorW - 4} y={motorY + 18} width="8" height="14" rx="1" fill="#2A2A28" />
+        {/* Motor flange to body */}
+        <rect x={bodyX + bodyW - 2} y={motorY + motorH * 0.3} width="8" height={motorH * 0.55} rx="1" fill="#2A2A28" />
+        {/* Cable coiled beside motor */}
+        <path
+          d={`M ${motorX + motorW - 2} ${motorY + 32}
+              q 8 2 6 12
+              q -2 8 4 12
+              q 6 6 2 14
+              q -4 8 0 14
+              q 4 6 0 12`}
+          stroke="#0A0A09"
+          strokeWidth="3.5"
+          fill="none"
+          strokeLinecap="round"
         />
-        <rect x={motorX - 4} y={cy - motorSize / 3} width="6" height={motorSize * 0.66} rx="1" fill="#555" />
-        {/* Shaft */}
-        <rect x={motorX - 10} y={cy - 2} width="8" height="4" fill="#999" />
         {showLabels && (
-          <text x={motorX + motorSize * 0.7} y={cy + motorSize / 2 + 14} textAnchor="middle" className="fill-muted" style={{ fontSize: '9px' }}>
-            Motor
+          <text x={motorX + motorW / 2} y={motorY - 8} textAnchor="middle" className="fill-muted" style={{ fontSize: '9px' }}>
+            {t('label_motor')}
           </text>
         )}
       </motion.g>
 
-      {/* Coupling */}
-      <rect x={bodyX + bodyWidth - 6} y={cy - 5} width="12" height="10" rx="2" fill="#777" />
+      {/* ---- Aluminium extrusion body ---- */}
+      <motion.g
+        initial={{ opacity: 0, scaleY: 0.9 }}
+        animate={{ opacity: 1, scaleY: 1 }}
+        transition={{ duration: 0.5 }}
+        style={{ transformOrigin: `${cx}px ${bodyBottom}px` }}
+      >
+        <rect
+          x={bodyX}
+          y={bodyTop}
+          width={bodyW}
+          height={bodyH}
+          rx="2"
+          fill="url(#alu)"
+          stroke="#888"
+          strokeWidth="0.5"
+        />
+        {/* Extrusion grooves (vertical flutes) */}
+        {[0.25, 0.5, 0.75].map((f) => (
+          <line
+            key={f}
+            x1={bodyX + bodyW * f}
+            y1={bodyTop + 6}
+            x2={bodyX + bodyW * f}
+            y2={bodyBottom - 6}
+            stroke="#999"
+            strokeWidth="0.6"
+            opacity="0.6"
+          />
+        ))}
+        {/* Top black end cap */}
+        <rect x={bodyX - 2} y={bodyTop - 6} width={bodyW + 4} height="10" rx="1.5" fill="url(#darkCap)" />
+        {/* Bottom transition to base */}
+        <rect x={bodyX - 2} y={bodyBottom - 4} width={bodyW + 4} height="8" rx="1" fill="#1A1A19" />
 
-      {/* Body / extrusion */}
-      <motion.rect
-        initial={{ opacity: 0, scaleX: 0.9 }}
-        animate={{ opacity: 1, scaleX: 1 }}
-        transition={{ duration: 0.4 }}
-        x={bodyX}
-        y={bodyY}
-        width={bodyWidth}
-        height={bodyHeight}
-        rx="4"
-        fill="url(#bodyGrad)"
-        stroke="#999"
-        strokeWidth="0.5"
-      />
-      {/* Extrusion grooves */}
-      <line x1={bodyX + 10} y1={bodyY + 4} x2={bodyX + bodyWidth - 10} y2={bodyY + 4} stroke="#AAA" strokeWidth="0.5" />
-      <line x1={bodyX + 10} y1={bodyY + bodyHeight - 4} x2={bodyX + bodyWidth - 10} y2={bodyY + bodyHeight - 4} stroke="#AAA" strokeWidth="0.5" />
+        {/* Cover bellows on top of rod */}
+        {hasCover && (
+          <rect x={bodyX + 8} y={bodyTop - 18} width={bodyW - 16} height="14" rx="2" fill="#333" opacity="0.8" />
+        )}
+        {hasBellows && (
+          <g>
+            {[0, 1, 2, 3, 4].map((i) => (
+              <line
+                key={i}
+                x1={cx - 14 + i * 6}
+                y1={bodyTop - 16}
+                x2={cx - 11 + i * 6}
+                y2={bodyTop - 6}
+                stroke="#777"
+                strokeWidth="1.5"
+              />
+            ))}
+          </g>
+        )}
 
-      {/* Carriage / slider */}
-      <motion.rect
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.2, duration: 0.3 }}
-        x={bodyX + bodyWidth * 0.3}
-        y={bodyY - 6}
-        width={bodyWidth * 0.25}
-        height={bodyHeight + 12}
-        rx="3"
-        fill="#2A2A28"
-      />
-      <rect x={bodyX + bodyWidth * 0.3 + 4} y={bodyY - 3} width={bodyWidth * 0.25 - 8} height="3" rx="1" fill="#444" />
+        {/* Rod extending upward */}
+        <rect x={cx - 4} y={bodyTop - 28} width="8" height="24" fill="#C8C8C4" stroke="#999" strokeWidth="0.5" />
 
-      {/* Front rod / piston */}
-      <rect x={bodyX - 30} y={cy - 4} width="34" height="8" rx="2" fill="#BBB" stroke="#999" strokeWidth="0.5" />
-      <circle cx={bodyX - 32} cy={cy} r="5" fill="#999" stroke="#777" strokeWidth="0.5" />
-
-      {/* Bellows */}
-      {hasBellows && (
+        {/* ---- Spherical rod end (clevis eye) ---- */}
         <g>
-          {[0, 1, 2, 3, 4].map((i) => (
-            <path
-              key={i}
-              d={`M ${bodyX - 28 + i * 5} ${cy - 7} L ${bodyX - 25 + i * 5} ${cy + 7}`}
-              stroke="#888"
-              strokeWidth="1.5"
-              fill="none"
-            />
-          ))}
+          {/* Rod end body */}
+          <circle cx={cx} cy={bodyTop - 38} r="13" fill="url(#steelJoint)" stroke="#666" strokeWidth="0.8" />
+          {/* Inner bearing hole */}
+          <circle cx={cx} cy={bodyTop - 38} r="6.5" fill="#2A2A28" stroke="#888" strokeWidth="1" />
+          <circle cx={cx} cy={bodyTop - 38} r="3" fill="#111" />
+          {/* Mounting ears */}
+          <rect x={cx - 11} y={bodyTop - 28} width="22" height="6" rx="1" fill="#999" />
         </g>
-      )}
 
-      {/* Protective cover */}
-      {hasCover && (
-        <rect x={bodyX + 4} y={bodyY - 10} width={bodyWidth - 8} height="6" rx="2" fill="#555" opacity="0.7" />
-      )}
-
-      {/* Rails indicator */}
-      <line x1={bodyX + 6} y1={bodyY + 8} x2={bodyX + bodyWidth - 6} y2={bodyY + 8} stroke="#888" strokeWidth="1" />
-      <line x1={bodyX + 6} y1={bodyY + bodyHeight - 8} x2={bodyX + bodyWidth - 6} y2={bodyY + bodyHeight - 8} stroke="#888" strokeWidth="1" />
-
-      {showLabels && (
-        <>
-          <text x={bodyX + bodyWidth * 0.42} y={bodyY - 12} textAnchor="middle" className="fill-muted" style={{ fontSize: '9px' }}>
-            Carriage
+        {showLabels && (
+          <text x={cx} y={bodyTop - 56} textAnchor="middle" className="fill-muted" style={{ fontSize: '9px' }}>
+            {t('label_rod_end')}
           </text>
-          <text x={bodyX - 15} y={cy + 20} textAnchor="middle" className="fill-muted" style={{ fontSize: '9px' }}>
-            Rod
-          </text>
-        </>
-      )}
+        )}
+      </motion.g>
     </g>
   );
 }
 
 // ---------------------------------------------------------------------------
 function TransmissionView({
-  bodyWidth,
-  bodyHeight,
-  motorSize,
+  bodyW,
+  bodyH,
+  motorW,
+  motorH,
   config,
   screw,
   belt,
 }: {
-  bodyWidth: number;
-  bodyHeight: number;
-  motorSize: number;
+  bodyW: number;
+  bodyH: number;
+  motorW: number;
+  motorH: number;
   config: Configuration;
   screw?: ReturnType<typeof ballScrews.find>;
   belt?: ReturnType<typeof timingBelts.find>;
 }) {
-  const cx = 210;
-  const cy = 100;
-  const bodyX = cx - bodyWidth / 2;
-  const bodyY = cy - bodyHeight / 2;
-  const motorX = bodyX + bodyWidth + 8;
+  const cx = 135;
+  const bodyX = cx - bodyW / 2;
+  const baseY = 388;
+  const bodyBottom = baseY - 34;
+  const bodyTop = bodyBottom - bodyH;
+  const motorX = bodyX + bodyW + 6;
+  const motorY = bodyBottom - motorH - 4;
 
   return (
     <g>
+      {/* Ghost body outline */}
+      <rect x={bodyX} y={bodyTop} width={bodyW} height={bodyH} rx="2" fill="none" stroke="#BBB" strokeWidth="1" strokeDasharray="4,3" />
+      {/* Rod end */}
+      <circle cx={cx} cy={bodyTop - 38} r="13" fill="none" stroke="#999" strokeWidth="1.5" />
+      <circle cx={cx} cy={bodyTop - 38} r="6.5" fill="none" stroke="#999" strokeWidth="1" />
+      <rect x={cx - 4} y={bodyTop - 28} width="8" height="24" fill="none" stroke="#999" strokeWidth="1" />
+      {/* Base */}
+      <rect x={cx - 48} y={baseY - 34} width="96" height="22" rx="2" fill="#1A1A19" opacity="0.6" />
       {/* Motor */}
-      <rect x={motorX} y={cy - motorSize / 2} width={motorSize * 1.4} height={motorSize} rx="3" fill="url(#motorGrad)" />
-      <rect x={motorX - 4} y={cy - motorSize / 3} width="6" height={motorSize * 0.66} rx="1" fill="#555" />
-
-      {/* Body outline (transparent) */}
-      <rect x={bodyX} y={bodyY} width={bodyWidth} height={bodyHeight} rx="4" fill="none" stroke="#BBB" strokeWidth="1" strokeDasharray="4,3" />
+      <rect x={motorX} y={motorY} width={motorW} height={motorH} rx="3" fill="url(#motorBody)" opacity="0.7" />
 
       {config.transmission === 'timing_belt' ? (
-        // Timing belt drive
         <g>
-          {/* Drive pulley (motor side) */}
-          <circle cx={bodyX + bodyWidth - 20} cy={cy} r="16" fill="#444" stroke="#222" strokeWidth="1" />
-          {[...Array(12)].map((_, i) => {
-            const angle = (i * 30 * Math.PI) / 180;
-            return (
-              <line
-                key={i}
-                x1={bodyX + bodyWidth - 20 + Math.cos(angle) * 13}
-                y1={cy + Math.sin(angle) * 13}
-                x2={bodyX + bodyWidth - 20 + Math.cos(angle) * 17}
-                y2={cy + Math.sin(angle) * 17}
-                stroke="#333"
-                strokeWidth="2"
-              />
-            );
-          })}
-          {/* Idler pulley */}
-          <circle cx={bodyX + 25} cy={cy} r="12" fill="#555" stroke="#333" strokeWidth="1" />
-          {/* Belt */}
-          <rect x={bodyX + 13} y={cy - 17} width={bodyWidth - 46} height="4" rx="2" fill="#2A2A28" />
-          <rect x={bodyX + 13} y={cy + 13} width={bodyWidth - 46} height="4" rx="2" fill="#2A2A28" />
-          {/* Belt teeth */}
-          {[...Array(Math.floor((bodyWidth - 46) / 8))].map((_, i) => (
-            <g key={i}>
-              <rect x={bodyX + 15 + i * 8} y={cy - 17} width="3" height="2" fill="#444" />
-              <rect x={bodyX + 15 + i * 8} y={cy + 15} width="3" height="2" fill="#444" />
-            </g>
+          {/* Vertical belt path inside body */}
+          <rect x={cx - 8} y={bodyTop + 12} width="16" height={bodyH - 24} fill="#2A2A28" opacity="0.85" />
+          {/* Pulleys top & bottom */}
+          <circle cx={cx} cy={bodyTop + 18} r="11" fill="#444" stroke="#222" strokeWidth="1" />
+          <circle cx={cx} cy={bodyBottom - 18} r="11" fill="#444" stroke="#222" strokeWidth="1" />
+          <circle cx={cx} cy={bodyTop + 18} r="4" fill="#222" />
+          <circle cx={cx} cy={bodyBottom - 18} r="4" fill="#222" />
+          {/* Belt teeth indicators */}
+          {[...Array(18)].map((_, i) => (
+            <line key={i} x1={cx - 8} y1={bodyTop + 34 + i * ((bodyH - 60) / 18)} x2={cx + 8} y2={bodyTop + 34 + i * ((bodyH - 60) / 18)} stroke="#444" strokeWidth="1" />
           ))}
-          <text x={bodyX + bodyWidth / 2} y={cy - 24} textAnchor="middle" className="fill-muted" style={{ fontSize: '9px' }}>
+          <text x={cx + 55} y={bodyTop + bodyH / 2} className="fill-muted" style={{ fontSize: '9px' }}>
             {belt ? `${belt.series} ${belt.pitch}` : 'Timing Belt'}
           </text>
         </g>
       ) : (
-        // Ball screw drive
         <g>
-          {/* Screw shaft */}
-          <rect x={bodyX + 15} y={cy - 4} width={bodyWidth - 45} height="8" rx="2" fill="url(#screwGrad)" stroke="#888" strokeWidth="0.5" />
+          {/* Ball screw vertical shaft */}
+          <rect x={cx - 3} y={bodyTop + 12} width="6" height={bodyH - 24} fill="url(#alu)" stroke="#888" strokeWidth="0.5" />
           {/* Screw threads */}
-          {[...Array(Math.floor((bodyWidth - 45) / (screw?.lead ?? 10) * 2))].map((_, i) => (
+          {[...Array(Math.floor((bodyH - 24) / (screw?.lead ?? 10) * 2))].map((_, i) => (
             <line
               key={i}
-              x1={bodyX + 17 + i * ((screw?.lead ?? 10) / 2)}
-              y1={cy - 4}
-              x2={bodyX + 17 + i * ((screw?.lead ?? 10) / 2) + 3}
-              y2={cy + 4}
-              stroke="#777"
-              strokeWidth="0.8"
+              x1={cx - 3}
+              y1={bodyTop + 14 + i * ((screw?.lead ?? 10) / 2)}
+              x2={cx + 3}
+              y2={bodyTop + 17 + i * ((screw?.lead ?? 10) / 2)}
+              stroke="#888"
+              strokeWidth="0.7"
             />
           ))}
           {/* Ball nut */}
-          <rect x={bodyX + bodyWidth * 0.35} y={cy - 10} width="24" height="20" rx="3" fill="#3A3A38" stroke="#222" strokeWidth="0.5" />
-          <circle cx={bodyX + bodyWidth * 0.35 + 12} cy={cy} r="5" fill="#555" />
-          {/* Coupling */}
-          <rect x={bodyX + bodyWidth - 28} y={cy - 6} width="14" height="12" rx="2" fill="#666" />
-          <text x={bodyX + bodyWidth / 2} y={cy - 18} textAnchor="middle" className="fill-muted" style={{ fontSize: '9px' }}>
-            {screw ? `Ø${screw.diameter} · Lead ${screw.lead}mm` : 'Ball Screw'}
-          </text>
-          <text x={bodyX + bodyWidth * 0.35 + 12} y={cy + 24} textAnchor="middle" className="fill-muted" style={{ fontSize: '8px' }}>
-            Ball Nut
+          <rect x={cx - 10} y={bodyTop + bodyH * 0.3} width="20" height="26" rx="3" fill="#2A2A28" stroke="#111" strokeWidth="0.5" />
+          <circle cx={cx} cy={bodyTop + bodyH * 0.3 + 13} r="5" fill="#555" />
+          <text x={cx + 55} y={bodyTop + bodyH * 0.35} className="fill-muted" style={{ fontSize: '9px' }}>
+            {screw ? `Ø${screw.diameter} · L${screw.lead}` : 'Ball Screw'}
           </text>
         </g>
       )}
@@ -343,63 +420,67 @@ function TransmissionView({
 
 // ---------------------------------------------------------------------------
 function ExplodedView({
-  bodyWidth,
-  bodyHeight,
-  motorSize,
+  bodyW,
+  motorW,
+  motorH,
   config,
+  t,
 }: {
-  bodyWidth: number;
-  bodyHeight: number;
-  motorSize: number;
+  bodyW: number;
+  motorW: number;
+  motorH: number;
   config: Configuration;
+  t: (k: TranslationKey) => string;
 }) {
-  const cy = 100;
-  const spacing = 70;
-  const startX = 60;
+  const cx = 135;
+  const parts = [
+    { key: 'rod_end', y: 30, label: t('label_rod_end'), el: (
+      <g>
+        <circle cx={cx} cy={30} r="12" fill="url(#steelJoint)" stroke="#666" strokeWidth="0.8" />
+        <circle cx={cx} cy={30} r="5" fill="#2A2A28" />
+      </g>
+    )},
+    { key: 'rod', y: 80, label: t('label_rod'), el: (
+      <rect x={cx - 4} y={70} width="8" height="20" fill="#C8C8C4" stroke="#999" strokeWidth="0.5" />
+    )},
+    { key: 'body', y: 180, label: t('label_body'), el: (
+      <rect x={cx - bodyW / 2} y={105} width={bodyW} height={150} rx="2" fill="url(#alu)" stroke="#888" strokeWidth="0.5" />
+    )},
+    { key: 'transmission', y: 270, label: config.transmission === 'timing_belt' ? t('label_belt') : t('label_screw'), el: (
+      config.transmission === 'timing_belt'
+        ? <rect x={cx - 8} y={255} width="16" height="30" fill="#2A2A28" />
+        : <rect x={cx - 3} y={255} width="6" height="30" fill="url(#alu)" />
+    )},
+    { key: 'base', y: 320, label: 'Base', el: (
+      <rect x={cx - 40} y={310} width="80" height="18" rx="2" fill="#1A1A19" />
+    )},
+  ];
 
   return (
     <g>
-      {/* Rod end */}
-      <motion.g initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}>
-        <circle cx={startX} cy={cy} r="8" fill="#999" stroke="#777" strokeWidth="0.5" />
-        <rect x={startX + 6} y={cy - 3} width="20" height="6" rx="1" fill="#BBB" />
-        <text x={startX} y={cy + 24} textAnchor="middle" className="fill-muted" style={{ fontSize: '8px' }}>Rod End</text>
-      </motion.g>
-
-      {/* Carriage */}
-      <motion.g initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
-        <rect x={startX + spacing} y={cy - bodyHeight / 2 - 4} width={bodyWidth * 0.22} height={bodyHeight + 8} rx="3" fill="#2A2A28" />
-        <text x={startX + spacing + bodyWidth * 0.11} y={cy + bodyHeight / 2 + 18} textAnchor="middle" className="fill-muted" style={{ fontSize: '8px' }}>Carriage</text>
-      </motion.g>
-
-      {/* Body */}
-      <motion.g initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}>
-        <rect x={startX + spacing * 2} y={cy - bodyHeight / 2} width={bodyWidth * 0.5} height={bodyHeight} rx="4" fill="url(#bodyGrad)" stroke="#999" strokeWidth="0.5" />
-        <text x={startX + spacing * 2 + bodyWidth * 0.25} y={cy + bodyHeight / 2 + 18} textAnchor="middle" className="fill-muted" style={{ fontSize: '8px' }}>Body</text>
-      </motion.g>
-
-      {/* Screw / Belt */}
-      <motion.g initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }}>
-        {config.transmission === 'timing_belt' ? (
-          <rect x={startX + spacing * 3} y={cy - 3} width={bodyWidth * 0.3} height="6" rx="2" fill="#2A2A28" />
-        ) : (
-          <rect x={startX + spacing * 3} y={cy - 3} width={bodyWidth * 0.3} height="6" rx="2" fill="url(#screwGrad)" />
-        )}
-        <text x={startX + spacing * 3 + bodyWidth * 0.15} y={cy + 18} textAnchor="middle" className="fill-muted" style={{ fontSize: '8px' }}>
-          {config.transmission === 'timing_belt' ? 'Belt' : 'Screw'}
+      {parts.map((p, i) => (
+        <motion.g
+          key={p.key}
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: i * 0.12, duration: 0.4 }}
+        >
+          {p.el}
+          <text x={cx + 55} y={p.y + 4} className="fill-muted" style={{ fontSize: '9px' }}>
+            {p.label}
+          </text>
+        </motion.g>
+      ))}
+      {/* Motor on the right, exploded horizontally */}
+      <motion.g
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.6, duration: 0.4 }}
+      >
+        <rect x={220} y={240} width={motorW} height={motorH} rx="3" fill="url(#motorBody)" />
+        <text x={220 + motorW / 2} y={230} textAnchor="middle" className="fill-muted" style={{ fontSize: '9px' }}>
+          {t('label_motor')}
         </text>
-      </motion.g>
-
-      {/* Coupling */}
-      <motion.g initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }}>
-        <rect x={startX + spacing * 4} y={cy - 6} width="14" height="12" rx="2" fill="#666" />
-        <text x={startX + spacing * 4 + 7} y={cy + 22} textAnchor="middle" className="fill-muted" style={{ fontSize: '8px' }}>Coupling</text>
-      </motion.g>
-
-      {/* Motor */}
-      <motion.g initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.6 }}>
-        <rect x={startX + spacing * 4.5} y={cy - motorSize / 2} width={motorSize * 1.3} height={motorSize} rx="3" fill="url(#motorGrad)" />
-        <text x={startX + spacing * 4.5 + motorSize * 0.65} y={cy + motorSize / 2 + 18} textAnchor="middle" className="fill-muted" style={{ fontSize: '8px' }}>Motor</text>
       </motion.g>
     </g>
   );
