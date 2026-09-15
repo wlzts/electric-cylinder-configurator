@@ -38,7 +38,7 @@ function CylinderModel({
 }) {
   const group = useRef<Group>(null);
   const partsRef = useRef<PartInfo[]>([]);
-  const { scene } = useGLTF(import.meta.env.BASE_URL + 'models/electric-cylinder.glb?v=9');
+  const { scene } = useGLTF(import.meta.env.BASE_URL + 'models/electric-cylinder.glb?v=10');
 
   useEffect(() => {
     partsRef.current = [];
@@ -78,16 +78,16 @@ function CylinderModel({
     partsRef.current.forEach(({ mesh, partKey, originalX }) => {
       let targetX = originalX;
 
-      // Exploded offsets (in model units)
+      // Exploded offsets (in model units = mm)
       if (exploded) {
-        if (partKey === 'rod') targetX = originalX + 18;
-        if (partKey === 'motor') targetX = originalX - 14;
-        if (partKey === 'body_1') targetX = originalX + 8;
+        if (partKey === 'rod') targetX = originalX + 40;
+        if (partKey === 'motor') targetX = originalX - 30;
+        if (partKey === 'body_1') targetX = originalX + 20;
       }
 
       // Parametric stroke: extend rod
       if (partKey === 'rod' && !exploded) {
-        const strokeExtend = (strokeMm - 100) * 0.08; // 100mm→0, 500mm→32
+        const strokeExtend = (strokeMm - 100) * 0.35; // 100mm→0, 500mm→140
         targetX = originalX + strokeExtend;
       }
 
@@ -200,4 +200,4 @@ export function Cylinder3DViewer() {
   );
 }
 
-useGLTF.preload(import.meta.env.BASE_URL + 'models/electric-cylinder.glb?v=9');
+useGLTF.preload(import.meta.env.BASE_URL + 'models/electric-cylinder.glb?v=10');
