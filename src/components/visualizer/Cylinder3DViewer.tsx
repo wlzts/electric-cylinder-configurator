@@ -7,15 +7,20 @@ import type { Group, Mesh } from 'three';
 const PART_NAMES: Record<string, { zh: string; en: string }> = {
   body: { zh: '电缸本体', en: 'Cylinder Body' },
   body_1: { zh: '前端盖', en: 'Front Cover' },
-  motor: { zh: 'P400 伺服电机', en: 'P400 Servo Motor' },
+  motor: { zh: '伺服电机', en: 'Servo Motor' },
   rod: { zh: '活塞杆', en: 'Piston Rod' },
+  belt: { zh: '同步带', en: 'Timing Belt' },
+  end: { zh: '端盖', en: 'End Cap' },
 };
 
 function identifyPart(name: string): string | null {
-  if (name.includes('motor')) return 'motor';
-  if (name.includes('rod')) return 'rod';
-  if (name.includes('body_1') || name.includes('body1')) return 'body_1';
-  if (name.includes('body')) return 'body';
+  const n = name.toLowerCase();
+  if (n.includes('rod')) return 'rod';
+  if (n.includes('ms1h3') || n.includes('motor') || n.includes('p400')) return 'motor';
+  if (n.includes('tb-') || n.includes('timing')) return 'belt';
+  if (n.includes('end-') || n.includes('end cap')) return 'end';
+  if (n.includes('body_1') || n.includes('body1')) return 'body_1';
+  if (n.includes('body')) return 'body';
   return null;
 }
 
@@ -25,12 +30,26 @@ interface PartInfo {
   originalX: number;
 }
 
+interface ModelConfig {
+  id: string;
+  label: string;
+  file: string;
+  center: [number, number, number];
+}
+
+const MODELS: ModelConfig[] = [
+  { id: 'coze40', label: 'COZE40 滚珠丝杠型', file: 'models/electric-cylinder.glb?v=11', center: [-0.051, 0, 0.0065] },
+  { id: 'dmc160', label: 'DMC160 同步带型', file: 'models/dmc160.glb?v=11', center: [-0.222, -0.107, 0] },
+];
+
 function CylinderModel({
+  model,
   exploded,
   selectedPart,
   onSelectPart,
   strokeMm,
 }: {
+  model: ModelConfig;
   exploded: boolean;
   selectedPart: string | null;
   onSelectPart: (part: string | null) => void;
@@ -38,7 +57,7 @@ function CylinderModel({
 }) {
   const group = useRef<Group>(null);
   const partsRef = useRef<PartInfo[]>([]);
-  const { scene } = useGLTF(import.meta.env.BASE_URL + 'models/electric-cylinder.glb?v=10');
+  const { scene } = useGLTF(import.meta.env.BASE_URL + model.file);
 
   useEffect(() => {
     partsRef.current = [];
@@ -74,27 +93,25 @@ function CylinderModel({
       group.current.rotation.y += delta * 0.15;
     }
 
-    // Animate parts: mesh.position.x is where the offset lives
     partsRef.current.forEach(({ mesh, partKey, originalX }) => {
       let targetX = originalX;
 
-      // Exploded offsets (in model units = mm)
       if (exploded) {
         if (partKey === 'rod') targetX = originalX + 40;
         if (partKey === 'motor') targetX = originalX - 30;
         if (partKey === 'body_1') targetX = originalX + 20;
+        if (partKey === 'belt') targetX = originalX + 15;
+        if (partKey === 'end') targetX = originalX - 15;
       }
 
-      // Parametric stroke: extend rod
       if (partKey === 'rod' && !exploded) {
-        const strokeExtend = (strokeMm - 100) * 0.35; // 100mm→0, 500mm→140
+        const strokeExtend = (strokeMm - 100) * 0.35;
         targetX = originalX + strokeExtend;
       }
 
       mesh.position.x += (targetX - mesh.position.x) * Math.min(1, delta * 5);
     });
 
-    // Highlight selected part
     partsRef.current.forEach(({ mesh, partKey }) => {
       const mat = mesh.material as THREE.MeshStandardMaterial;
       if (!mat || !mat.emissive) return;
@@ -110,7 +127,7 @@ function CylinderModel({
 
   return (
     <group ref={group}>
-      <group position={[-0.051, 0, 0.0065]}>
+      <group position={model.center}>
         <primitive object={scene} />
       </group>
     </group>
@@ -118,17 +135,18 @@ function CylinderModel({
 }
 
 export function Cylinder3DViewer() {
+  const [modelId, setModelId] = useState(MODELS[0].id);
   const [exploded, setExploded] = useState(false);
   const [selectedPart, setSelectedPart] = useState<string | null>(null);
   const [strokeMm, setStrokeMm] = useState(100);
 
+  const model = MODELS.find((m) => m.id === modelId) ?? MODELS[0];
   const handleSelectPart = useCallback((part: string | null) => {
     setSelectedPart(part);
   }, []);
 
   return (
     <div className="relative h-[460px] w-full overflow-hidden rounded-card border border-line bg-gradient-to-b from-[#f8f8f6] to-[#e8e8e5]">
-      {/* 工具栏 */}
       <div className="absolute top-2 left-2 z-10 flex gap-1.5">
         <button
           onClick={() => setExploded(!exploded)}
@@ -148,9 +166,23 @@ export function Cylinder3DViewer() {
         )}
       </div>
 
-      {/* 选中零件信息 */}
+      {/* 型号切换 */}
+      <div className="absolute top-2 right-2 z-10 flex gap-1">
+        {MODELS.map((m) => (
+          <button
+            key={m.id}
+            onClick={() => { setModelId(m.id); setSelectedPart(null); }}
+            className={`rounded-md px-2 py-1 text-xs font-medium transition-colors ${
+              modelId === m.id ? 'bg-accent text-white' : 'bg-white/80 text-ink border border-line hover:bg-white'
+            }`}
+          >
+            {m.label}
+          </button>
+        ))}
+      </div>
+
       {selectedPart && PART_NAMES[selectedPart] && (
-        <div className="absolute top-2 right-2 z-10 rounded-lg bg-white/90 px-3 py-2 text-xs shadow-sm border border-line">
+        <div className="absolute top-10 right-2 z-10 rounded-lg bg-white/90 px-3 py-2 text-xs shadow-sm border border-line">
           <div className="font-semibold text-ink">{PART_NAMES[selectedPart].zh}</div>
           <div className="text-muted">{PART_NAMES[selectedPart].en}</div>
         </div>
@@ -182,6 +214,8 @@ export function Cylinder3DViewer() {
         <pointLight position={[0, 0.3, 0.3]} intensity={0.3} />
         <Suspense fallback={null}>
           <CylinderModel
+            key={model.id}
+            model={model}
             exploded={exploded}
             selectedPart={selectedPart}
             onSelectPart={handleSelectPart}
@@ -200,4 +234,6 @@ export function Cylinder3DViewer() {
   );
 }
 
-useGLTF.preload(import.meta.env.BASE_URL + 'models/electric-cylinder.glb?v=10');
+MODELS.forEach((m) => {
+  useGLTF.preload(import.meta.env.BASE_URL + m.file);
+});
