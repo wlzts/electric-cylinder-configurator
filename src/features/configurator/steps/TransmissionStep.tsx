@@ -5,6 +5,7 @@ import { useConfiguratorStore } from '@/store/useConfiguratorStore';
 import { transmissions } from '@/data';
 import { checkTransmission } from '@/compatibility';
 import { OptionCard } from '@/components/ui/OptionCard';
+import { useI18n } from '@/i18n';
 import type { TransmissionKind } from '@/types';
 
 const icons: Record<TransmissionKind, typeof Zap> = {
@@ -14,23 +15,24 @@ const icons: Record<TransmissionKind, typeof Zap> = {
 };
 
 export function TransmissionStep() {
+  const { t } = useI18n();
   const { configuration, requirements, setConfiguration } = useConfiguratorStore();
 
   const results = useMemo(
-    () => transmissions.map((t) => ({ t, result: checkTransmission(t.kind, configuration, requirements) })),
+    () => transmissions.map((tr) => ({ tr, result: checkTransmission(tr.kind, configuration, requirements) })),
     [configuration, requirements],
   );
 
   return (
     <div>
-      <p className="mb-4 text-xs text-muted">Choose the transmission technology. Each changes the product visualizer and performance profile.</p>
+      <p className="mb-4 text-xs text-muted">{t('trans_subtitle')}</p>
       <div className="grid gap-4 md:grid-cols-3">
-        {results.map(({ t, result }, i) => {
-          const Icon = icons[t.kind];
-          const selected = configuration.transmission === t.kind;
+        {results.map(({ tr, result }, i) => {
+          const Icon = icons[tr.kind];
+          const selected = configuration.transmission === tr.kind;
           return (
             <motion.div
-              key={t.id}
+              key={tr.id}
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.08 }}
@@ -38,9 +40,9 @@ export function TransmissionStep() {
               <OptionCard
                 selected={selected}
                 status={result.status}
-                onClick={() => setConfiguration({ transmission: t.kind, screwId: null, beltId: null })}
-                title={t.name}
-                subtitle={t.tagline}
+                onClick={() => setConfiguration({ transmission: tr.kind, screwId: null, beltId: null })}
+                title={tr.name}
+                subtitle={tr.tagline}
                 whyUnavailable={result.reasons[0]}
                 className="min-h-[280px]"
               >
@@ -49,23 +51,23 @@ export function TransmissionStep() {
                 </div>
                 <div className="space-y-2">
                   <div>
-                    <p className="text-2xs font-medium uppercase tracking-wider text-muted">Advantages</p>
+                    <p className="text-2xs font-medium uppercase tracking-wider text-muted">{t('trans_advantages')}</p>
                     <ul className="mt-1 space-y-0.5">
-                      {t.advantages.slice(0, 3).map((a, idx) => (
+                      {tr.advantages.slice(0, 3).map((a, idx) => (
                         <li key={idx} className="text-2xs text-ink/80">• {a}</li>
                       ))}
                     </ul>
                   </div>
                   <div>
-                    <p className="text-2xs font-medium uppercase tracking-wider text-muted">Limitations</p>
+                    <p className="text-2xs font-medium uppercase tracking-wider text-muted">{t('trans_limitations')}</p>
                     <ul className="mt-1 space-y-0.5">
-                      {t.limitations.slice(0, 2).map((l, idx) => (
+                      {tr.limitations.slice(0, 2).map((l, idx) => (
                         <li key={idx} className="text-2xs text-muted">• {l}</li>
                       ))}
                     </ul>
                   </div>
                 </div>
-                <p className="mt-3 rounded bg-ink/[0.03] px-2 py-1.5 text-2xs text-muted">{t.recommendedFor}</p>
+                <p className="mt-3 rounded bg-ink/[0.03] px-2 py-1.5 text-2xs text-muted">{tr.recommendedFor}</p>
               </OptionCard>
             </motion.div>
           );

@@ -1,6 +1,7 @@
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CONFIG_STEPS } from '@/features/configurator/steps';
+import { useI18n } from '@/i18n';
 
 interface StepNavProps {
   currentStep: number;
@@ -9,6 +10,8 @@ interface StepNavProps {
 }
 
 export function StepNav({ currentStep, onStepClick, completedSteps }: StepNavProps) {
+  const { t } = useI18n();
+
   return (
     <div className="sticky top-14 z-30 border-b border-line bg-bg/85 backdrop-blur-md">
       <div className="mx-auto max-w-[1600px] px-4 lg:px-8">
@@ -39,7 +42,7 @@ export function StepNav({ currentStep, onStepClick, completedSteps }: StepNavPro
                   >
                     {isCompleted ? <Check size={10} strokeWidth={3} /> : step.id + 1}
                   </span>
-                  <span className="hidden sm:inline">{step.label}</span>
+                  <span className="hidden sm:inline">{t(step.labelKey)}</span>
                   <span className="sm:hidden">{step.short}</span>
                 </button>
                 {idx < CONFIG_STEPS.length - 1 && (

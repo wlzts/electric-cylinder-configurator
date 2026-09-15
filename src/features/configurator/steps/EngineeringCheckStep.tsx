@@ -15,10 +15,12 @@ import { evaluateConfiguration } from '@/compatibility';
 import { cylinderSeries, motors, ballScrews, drives, protocols, accessories } from '@/data';
 import { PerformanceCard } from '@/components/ui/PerformanceCard';
 import { Badge } from '@/components/ui/Badge';
+import { useI18n } from '@/i18n';
 import type { EngineeringCheckItem, EngineeringCheckResult } from '@/types';
 import { formatNumber } from '@/lib/utils';
 
 export function EngineeringCheckStep() {
+  const { t } = useI18n();
   const { configuration, requirements } = useConfiguratorStore();
 
   const check = useMemo<EngineeringCheckResult>(() => {
@@ -178,7 +180,7 @@ export function EngineeringCheckStep() {
   const compat = useMemo(() => evaluateConfiguration(configuration, requirements), [configuration, requirements]);
 
   const overallTone = check.overall === 'valid' ? 'ok' : check.overall === 'attention' ? 'warn' : 'bad';
-  const overallLabel = check.overall === 'valid' ? 'Configuration Valid' : check.overall === 'attention' ? 'Configuration Requires Attention' : 'Configuration Not Valid';
+  const overallLabel = check.overall === 'valid' ? t('eng_valid') : check.overall === 'attention' ? t('eng_attention') : t('eng_invalid');
 
   return (
     <div className="space-y-6">
@@ -192,7 +194,7 @@ export function EngineeringCheckStep() {
             <div>
               <h2 className="text-lg font-semibold">{overallLabel}</h2>
               <p className="text-xs text-muted">
-                {check.passed} checks passed · {check.warnings} warning{check.warnings !== 1 ? 's' : ''} · {check.failures} critical issue{check.failures !== 1 ? 's' : ''}
+                {t('eng_summary', { passed: check.passed, warnings: check.warnings, failures: check.failures })}
               </p>
             </div>
           </div>
@@ -204,22 +206,22 @@ export function EngineeringCheckStep() {
       <div>
         <div className="mb-3 flex items-center gap-2">
           <Gauge size={14} className="text-muted" />
-          <h3 className="text-sm font-semibold">Performance Snapshot</h3>
-          <span className="rounded bg-accent/10 px-1.5 py-0.5 text-2xs text-accent-deep">Demo Calculation</span>
+          <h3 className="text-sm font-semibold">{t('eng_perf_snapshot')}</h3>
+          <span className="rounded bg-accent/10 px-1.5 py-0.5 text-2xs text-accent-deep">{t('common_demo_calc')}</span>
         </div>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-          <PerformanceCard label="Rated Thrust" value={perf.ratedThrust} unit="N" />
-          <PerformanceCard label="Max Speed" value={perf.maxSpeed} unit="mm/s" />
-          <PerformanceCard label="Motor RPM" value={perf.motorRPM} unit="rpm" />
-          <PerformanceCard label="Safety Factor" value={perf.safetyFactor} digits={2} tone={perf.safetyFactor && perf.safetyFactor >= ENGINEERING_CONFIG.safetyFactor.recommended ? 'ok' : perf.safetyFactor && perf.safetyFactor >= ENGINEERING_CONFIG.safetyFactor.acceptable ? 'warn' : 'bad'} />
-          <PerformanceCard label="Est. Life" value={perf.estimatedLife} unit="h" />
+          <PerformanceCard label={t('perf_rated_thrust')} value={perf.ratedThrust} unit="N" />
+          <PerformanceCard label={t('perf_max_speed')} value={perf.maxSpeed} unit="mm/s" />
+          <PerformanceCard label={t('perf_motor_rpm')} value={perf.motorRPM} unit="rpm" />
+          <PerformanceCard label={t('perf_safety')} value={perf.safetyFactor} digits={2} tone={perf.safetyFactor && perf.safetyFactor >= ENGINEERING_CONFIG.safetyFactor.recommended ? 'ok' : perf.safetyFactor && perf.safetyFactor >= ENGINEERING_CONFIG.safetyFactor.acceptable ? 'warn' : 'bad'} />
+          <PerformanceCard label={t('perf_life')} value={perf.estimatedLife} unit="h" />
         </div>
       </div>
 
       {/* Check list */}
       <div className="card overflow-hidden">
         <div className="border-b border-line bg-ink/[0.02] px-5 py-3">
-          <h3 className="text-sm font-semibold">Engineering Checks</h3>
+          <h3 className="text-sm font-semibold">{t('eng_checks_title')}</h3>
         </div>
         <div className="divide-y divide-line">
           {check.items.map((item, i) => (
@@ -250,7 +252,7 @@ export function EngineeringCheckStep() {
       </div>
 
       <p className="rounded-lg bg-accent/5 px-3 py-2 text-2xs text-muted">
-        Demo engineering calculation model. These checks use simplified formulas for UI demonstration. Final validation must use certified product data and engineering formulas. Required thrust: {formatNumber(calculateRequiredThrust(requirements))} N.
+        {t('eng_demo_note')} Required thrust: {formatNumber(calculateRequiredThrust(requirements))} N.
       </p>
     </div>
   );

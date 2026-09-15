@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import type { CompatibilityStatus } from '@/types';
 import { StatusBadge } from './Badge';
+import { useI18n } from '@/i18n';
 
 interface OptionCardProps {
   selected: boolean;
@@ -90,6 +91,7 @@ export function OptionCard({
 }
 
 function WhyUnavailable({ text }: { text: string }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   return (
     <button
@@ -100,7 +102,7 @@ function WhyUnavailable({ text }: { text: string }) {
       }}
       className="mt-2 block text-2xs text-bad hover:underline"
     >
-      Why unavailable?
+      {t('common_why_unavailable')}?
       {open && <p className="mt-1 text-2xs leading-relaxed text-muted">{text}</p>}
     </button>
   );
