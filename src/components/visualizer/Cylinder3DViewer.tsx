@@ -2,7 +2,7 @@ import { Suspense, useRef, useState, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useGLTF, OrbitControls, ContactShadows } from '@react-three/drei';
 import * as THREE from 'three';
-import type { Group, Mesh } from 'three';
+import type { Group, Mesh, Object3D } from 'three';
 
 const PART_NAMES: Record<string, { zh: string; en: string }> = {
   body: { zh: '电缸本体', en: 'Cylinder Body' },
@@ -20,7 +20,7 @@ function identifyPart(name: string): string | null {
 }
 
 interface PartInfo {
-  mesh: Mesh;
+  node: Object3D;
   partKey: string;
   originalPos: THREE.Vector3;
 }
@@ -36,7 +36,7 @@ function CylinderModel({
 }) {
   const group = useRef<Group>(null);
   const partsRef = useRef<PartInfo[]>([]);
-  const { scene } = useGLTF(import.meta.env.BASE_URL + 'models/electric-cylinder.glb?v=4');
+  const { scene } = useGLTF(import.meta.env.BASE_URL + 'models/electric-cylinder.glb?v=5');
 
   useEffect(() => {
     partsRef.current = [];
@@ -44,13 +44,15 @@ function CylinderModel({
       const mesh = child as Mesh;
       if (mesh.isMesh) {
         const key = identifyPart(mesh.name);
-        if (key) {
+        if (key && mesh.parent) {
           const mat = mesh.material as THREE.MeshStandardMaterial;
           if (mat && !mat.emissive) mat.emissive = new THREE.Color(0x000000);
+          // Use parent node (scene graph node with the actual transform)
+          const node = mesh.parent;
           partsRef.current.push({
-            mesh,
+            node,
             partKey: key,
-            originalPos: mesh.position.clone(),
+            originalPos: node.position.clone(),
           });
           const meshAny = mesh as unknown as { onPointerDown?: (e: { stopPropagation: () => void }) => void };
           meshAny.onPointerDown = (e: { stopPropagation: () => void }) => {
@@ -61,8 +63,10 @@ function CylinderModel({
       }
     });
     return () => {
-      partsRef.current.forEach(({ mesh }) => {
-        (mesh as unknown as { onPointerDown?: unknown }).onPointerDown = null;
+      partsRef.current.forEach(({ node }) => {
+        node.traverse((c) => {
+          (c as unknown as { onPointerDown?: unknown }).onPointerDown = null;
+        });
       });
     };
   }, [scene, selectedPart, onSelectPart]);
@@ -71,7 +75,7 @@ function CylinderModel({
     if (group.current && !selectedPart) {
       group.current.rotation.y += delta * 0.2;
     }
-    partsRef.current.forEach(({ mesh, partKey, originalPos }) => {
+    partsRef.current.forEach(({ node, partKey, originalPos }) => {
       let offsetX = 0;
       if (exploded) {
         if (partKey === 'rod') offsetX = 0.15;
@@ -79,18 +83,23 @@ function CylinderModel({
         if (partKey === 'body_1') offsetX = 0.06;
       }
       const targetX = originalPos.x + offsetX;
-      mesh.position.x += (targetX - mesh.position.x) * Math.min(1, delta * 5);
+      node.position.x += (targetX - node.position.x) * Math.min(1, delta * 5);
     });
-    partsRef.current.forEach(({ mesh, partKey }) => {
-      const mat = mesh.material as THREE.MeshStandardMaterial;
-      if (!mat || !mat.emissive) return;
-      if (selectedPart === partKey) {
-        mat.emissive.setHex(0xff6b35);
-        mat.emissiveIntensity = 0.45;
-      } else {
-        mat.emissive.setHex(0x000000);
-        mat.emissiveIntensity = 0;
-      }
+    partsRef.current.forEach(({ node, partKey }) => {
+      node.traverse((child) => {
+        const m = child as Mesh;
+        if (m.isMesh) {
+          const mat = m.material as THREE.MeshStandardMaterial;
+          if (!mat || !mat.emissive) return;
+          if (selectedPart === partKey) {
+            mat.emissive.setHex(0xff6b35);
+            mat.emissiveIntensity = 0.45;
+          } else {
+            mat.emissive.setHex(0x000000);
+            mat.emissiveIntensity = 0;
+          }
+        }
+      });
     });
   });
 
@@ -163,4 +172,4 @@ export function Cylinder3DViewer() {
   );
 }
 
-useGLTF.preload(import.meta.env.BASE_URL + 'models/electric-cylinder.glb?v=4');
+useGLTF.preload(import.meta.env.BASE_URL + 'models/electric-cylinder.glb?v=5');
