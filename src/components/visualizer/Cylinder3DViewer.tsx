@@ -18,8 +18,8 @@ interface ViewerModel {
 }
 
 const MODELS: ViewerModel[] = [
-  { id: 'coze40', label: 'COZE40 滚珠丝杠型', file: 'models/electric-cylinder.glb?v=6' },
-  { id: 'dmc160', label: 'DMC160 同步带型', file: 'models/dmc160.glb?v=6' },
+  { id: 'coze40', label: 'COZE40 滚珠丝杠型', file: 'models/electric-cylinder.glb?v=7' },
+  { id: 'dmc160', label: 'DMC160 同步带型', file: 'models/dmc160.glb?v=7' },
 ];
 
 export function Cylinder3DViewer() {
@@ -48,17 +48,17 @@ export function Cylinder3DViewer() {
       el.setAttribute('rotation-per-second', '24deg');
       // 工作室环境光照，让金属材质有反射质感
       el.setAttribute('environment-image', 'neutral');
-      el.setAttribute('environment-intensity', '1');
-      el.setAttribute('shadow-intensity', '1.2');
-      el.setAttribute('shadow-softness', '0.6');
-      el.setAttribute('exposure', '1.15');
+      el.setAttribute('environment-intensity', '0.55');
+      el.setAttribute('shadow-intensity', '0.9');
+      el.setAttribute('shadow-softness', '0.15');
+      el.setAttribute('exposure', '1.0');
       el.setAttribute('interaction-prompt', 'auto');
       el.setAttribute('interaction-prompt-style', 'wiggle');
       el.setAttribute('loading', 'lazy');
       el.setAttribute('alt', '电缸三维模型');
       el.style.width = '100%';
       el.style.height = '100%';
-      el.style.background = 'radial-gradient(circle at 50% 40%, #ffffff, #e9ecef)';
+      el.style.background = '#f5f5f3';
       el.style.setProperty('--poster-color', 'transparent');
       el.src = import.meta.env.BASE_URL + MODELS[0].file;
       el.addEventListener('load', () => setReady(true));
