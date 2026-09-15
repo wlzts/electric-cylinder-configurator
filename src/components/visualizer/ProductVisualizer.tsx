@@ -1,11 +1,15 @@
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import type { Configuration } from '@/types';
 import { cylinderSeries, motors, ballScrews, timingBelts, gearboxes } from '@/data';
 import { useI18n, type TranslationKey } from '@/i18n';
 import { cn } from '@/lib/utils';
 
-type ViewMode = 'side' | 'transmission' | 'exploded';
+const Cylinder3DViewer = lazy(() =>
+  import('./Cylinder3DViewer').then((m) => ({ default: m.Cylinder3DViewer })),
+);
+
+type ViewMode = 'side' | 'transmission' | 'exploded' | '3d';
 
 interface ProductVisualizerProps {
   config: Configuration;
@@ -35,6 +39,7 @@ export function ProductVisualizer({ config, className, showLabels = true }: Prod
     { id: 'side', label: t('view_side') },
     { id: 'transmission', label: t('view_transmission') },
     { id: 'exploded', label: t('view_exploded') },
+    { id: '3d', label: t('view_3d') },
   ];
 
   return (
@@ -56,6 +61,15 @@ export function ProductVisualizer({ config, className, showLabels = true }: Prod
       </div>
 
       <div className="relative flex items-center justify-center overflow-hidden rounded-card border border-line">
+        {view === '3d' ? (
+          <Suspense fallback={
+            <div className="flex h-[400px] w-full items-center justify-center text-xs text-muted">
+              {t('common_loading')}...
+            </div>
+          }>
+            <Cylinder3DViewer />
+          </Suspense>
+        ) : (
         <svg
           viewBox="0 0 300 440"
           className="w-full max-w-sm"
@@ -160,6 +174,7 @@ export function ProductVisualizer({ config, className, showLabels = true }: Prod
             />
           )}
         </svg>
+        )}
 
         {/* Spec overlay */}
         <div className="absolute bottom-2 left-2 flex flex-wrap gap-1.5 text-2xs text-muted">

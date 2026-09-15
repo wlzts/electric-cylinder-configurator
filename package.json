@@ -13,12 +13,16 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\""
   },
   "dependencies": {
+    "@react-three/drei": "^9.114.3",
+    "@react-three/fiber": "^8.17.10",
+    "@types/three": "^0.169.0",
     "framer-motion": "^11.3.19",
     "lucide-react": "^0.427.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.52.2",
     "react-router-dom": "^6.26.1",
+    "three": "^0.169.0",
     "zod": "^3.23.8",
     "zustand": "^4.5.4"
   },
