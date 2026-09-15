@@ -21,25 +21,32 @@ function identifyPart(name: string): string | null {
 
 interface PartInfo {
   node: Object3D;
+  mesh: Mesh;
   partKey: string;
   originalPos: THREE.Vector3;
+  meshOriginalPos: THREE.Vector3;
 }
 
 function CylinderModel({
   exploded,
   selectedPart,
   onSelectPart,
+  strokeMm,
+  onDebug,
 }: {
   exploded: boolean;
   selectedPart: string | null;
   onSelectPart: (part: string | null) => void;
+  strokeMm: number;
+  onDebug: (lines: string[]) => void;
 }) {
   const group = useRef<Group>(null);
   const partsRef = useRef<PartInfo[]>([]);
-  const { scene } = useGLTF(import.meta.env.BASE_URL + 'models/electric-cylinder.glb?v=7');
+  const { scene } = useGLTF(import.meta.env.BASE_URL + 'models/electric-cylinder.glb?v=8');
 
   useEffect(() => {
     partsRef.current = [];
+    const lines: string[] = [];
     scene.traverse((obj) => {
       for (const child of obj.children) {
         const mesh = child as Mesh;
@@ -50,9 +57,12 @@ function CylinderModel({
             if (mat && !mat.emissive) mat.emissive = new THREE.Color(0x000000);
             partsRef.current.push({
               node: obj,
+              mesh,
               partKey: key,
               originalPos: obj.position.clone(),
+              meshOriginalPos: mesh.position.clone(),
             });
+            lines.push(`${key}: node.pos=(${obj.position.x.toFixed(3)},${obj.position.y.toFixed(3)},${obj.position.z.toFixed(3)}) mesh.pos=(${mesh.position.x.toFixed(3)},${mesh.position.y.toFixed(3)},${mesh.position.z.toFixed(3)}) parent=${obj.name || 'unnamed'}`);
             const meshAny = mesh as unknown as { onPointerDown?: (e: { stopPropagation: () => void }) => void };
             meshAny.onPointerDown = (e: { stopPropagation: () => void }) => {
               e.stopPropagation();
@@ -62,18 +72,17 @@ function CylinderModel({
         }
       }
     });
+    onDebug(lines);
     return () => {
-      partsRef.current.forEach(({ node }) => {
-        node.traverse((c) => {
-          (c as unknown as { onPointerDown?: unknown }).onPointerDown = null;
-        });
+      partsRef.current.forEach(({ mesh }) => {
+        (mesh as unknown as { onPointerDown?: unknown }).onPointerDown = null;
       });
     };
-  }, [scene, selectedPart, onSelectPart]);
+  }, [scene, selectedPart, onSelectPart, onDebug]);
 
   useFrame((_, delta) => {
     if (group.current && !selectedPart) {
-      group.current.rotation.y += delta * 0.2;
+      group.current.rotation.y += delta * 0.15;
     }
     partsRef.current.forEach(({ node, partKey, originalPos }) => {
       let offsetX = 0;
@@ -85,21 +94,24 @@ function CylinderModel({
       const targetX = originalPos.x + offsetX;
       node.position.x += (targetX - node.position.x) * Math.min(1, delta * 5);
     });
-    partsRef.current.forEach(({ node, partKey }) => {
-      node.traverse((child) => {
-        const m = child as Mesh;
-        if (m.isMesh) {
-          const mat = m.material as THREE.MeshStandardMaterial;
-          if (!mat || !mat.emissive) return;
-          if (selectedPart === partKey) {
-            mat.emissive.setHex(0xff6b35);
-            mat.emissiveIntensity = 0.45;
-          } else {
-            mat.emissive.setHex(0x000000);
-            mat.emissiveIntensity = 0;
-          }
-        }
-      });
+    // Parametric stroke: extend rod
+    const rodPart = partsRef.current.find((p) => p.partKey === 'rod');
+    if (rodPart) {
+      const strokeOffset = (strokeMm / 1000) * 0.3; // scale: 100mm stroke → 30mm visual extension
+      const targetRodX = rodPart.originalPos.x + strokeOffset;
+      rodPart.node.position.x += (targetRodX - rodPart.node.position.x) * Math.min(1, delta * 5);
+    }
+    // Highlight
+    partsRef.current.forEach(({ mesh, partKey }) => {
+      const mat = mesh.material as THREE.MeshStandardMaterial;
+      if (!mat || !mat.emissive) return;
+      if (selectedPart === partKey) {
+        mat.emissive.setHex(0xff6b35);
+        mat.emissiveIntensity = 0.45;
+      } else {
+        mat.emissive.setHex(0x000000);
+        mat.emissiveIntensity = 0;
+      }
     });
   });
 
@@ -115,10 +127,14 @@ function CylinderModel({
 export function Cylinder3DViewer() {
   const [exploded, setExploded] = useState(false);
   const [selectedPart, setSelectedPart] = useState<string | null>(null);
+  const [strokeMm, setStrokeMm] = useState(100);
+  const [showDebug, setShowDebug] = useState(false);
+  const [debugLines, setDebugLines] = useState<string[]>([]);
 
   return (
-    <div className="relative h-[440px] w-full overflow-hidden rounded-card border border-line bg-gradient-to-b from-[#f8f8f6] to-[#e8e8e5]">
-      <div className="absolute top-2 left-2 z-10 flex gap-1.5">
+    <div className="relative h-[460px] w-full overflow-hidden rounded-card border border-line bg-gradient-to-b from-[#f8f8f6] to-[#e8e8e5]">
+      {/* Toolbar */}
+      <div className="absolute top-2 left-2 z-10 flex flex-wrap gap-1.5">
         <button
           onClick={() => setExploded(!exploded)}
           className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
@@ -127,20 +143,41 @@ export function Cylinder3DViewer() {
         >
           {exploded ? '合拢' : '爆炸视图'}
         </button>
-        {selectedPart && (
-          <button
-            onClick={() => setSelectedPart(null)}
-            className="rounded-md bg-white/80 px-2.5 py-1 text-xs font-medium text-ink border border-line hover:bg-white"
-          >
-            清除选择
-          </button>
-        )}
+        <button
+          onClick={() => setShowDebug(!showDebug)}
+          className="rounded-md bg-white/80 px-2.5 py-1 text-xs font-medium text-ink border border-line hover:bg-white"
+        >
+          调试
+        </button>
+      </div>
+
+      {/* Stroke slider */}
+      <div className="absolute bottom-2 left-2 right-2 z-10 flex items-center gap-2 rounded-lg bg-white/80 px-3 py-2 border border-line">
+        <span className="text-xs text-muted whitespace-nowrap">行程</span>
+        <input
+          type="range"
+          min={50}
+          max={500}
+          step={50}
+          value={strokeMm}
+          onChange={(e) => setStrokeMm(Number(e.target.value))}
+          className="flex-1 accent-accent"
+        />
+        <span className="text-xs font-semibold text-ink num whitespace-nowrap">{strokeMm} mm</span>
       </div>
 
       {selectedPart && PART_NAMES[selectedPart] && (
         <div className="absolute top-2 right-2 z-10 rounded-lg bg-white/90 px-3 py-2 text-xs shadow-sm border border-line">
           <div className="font-semibold text-ink">{PART_NAMES[selectedPart].zh}</div>
           <div className="text-muted">{PART_NAMES[selectedPart].en}</div>
+        </div>
+      )}
+
+      {showDebug && debugLines.length > 0 && (
+        <div className="absolute top-10 right-2 z-10 rounded-lg bg-black/80 px-3 py-2 text-xs text-green-300 font-mono max-w-xs">
+          {debugLines.map((line, i) => (
+            <div key={i}>{line}</div>
+          ))}
         </div>
       )}
 
@@ -158,6 +195,8 @@ export function Cylinder3DViewer() {
             exploded={exploded}
             selectedPart={selectedPart}
             onSelectPart={setSelectedPart}
+            strokeMm={strokeMm}
+            onDebug={setDebugLines}
           />
         </Suspense>
         <ContactShadows position={[0, -0.05, 0]} opacity={0.4} scale={0.6} blur={2.5} />
@@ -172,4 +211,4 @@ export function Cylinder3DViewer() {
   );
 }
 
-useGLTF.preload(import.meta.env.BASE_URL + 'models/electric-cylinder.glb?v=7');
+useGLTF.preload(import.meta.env.BASE_URL + 'models/electric-cylinder.glb?v=8');
