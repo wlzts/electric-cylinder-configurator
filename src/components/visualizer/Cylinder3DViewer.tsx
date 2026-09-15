@@ -1,8 +1,9 @@
-import { Suspense, useRef, useState, useEffect, useCallback } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Suspense, useRef, useState, useEffect, useLayoutEffect, useCallback } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { useGLTF, OrbitControls, ContactShadows } from '@react-three/drei';
 import * as THREE from 'three';
-import type { Group, Mesh } from 'three';
+import type { Group, Mesh, PerspectiveCamera } from 'three';
+import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 
 const PART_NAMES: Record<string, { zh: string; en: string }> = {
   body: { zh: '电缸本体', en: 'Cylinder Body' },
@@ -83,20 +84,96 @@ const MODELS: ModelConfig[] = [
   },
 ];
 
+// 根据整体包围盒自动取景，保证爆炸后所有零件完整可见
+function CameraRig({
+  outerRef,
+  model,
+  exploded,
+}: {
+  outerRef: React.RefObject<Group>;
+  model: ModelConfig;
+  exploded: boolean;
+}) {
+  const camera = useThree((s) => s.camera) as PerspectiveCamera;
+  const controls = useThree((s) => s.controls) as (OrbitControlsImpl & { target: THREE.Vector3 }) | null;
+  const size = useThree((s) => s.size);
+  const goalRadius = useRef(1);
+  const goalTarget = useRef(new THREE.Vector3(0, 0, 0));
+
+  useLayoutEffect(() => {
+    const g = outerRef.current;
+    if (!g) return;
+    // 临时归零旋转，取未旋转的包围盒
+    const rot = g.rotation.y;
+    g.rotation.y = 0;
+    g.updateWorldMatrix(true, true);
+    const box = new THREE.Box3().setFromObject(g);
+    g.rotation.y = rot;
+    const sz = box.getSize(new THREE.Vector3());
+    const c = box.getCenter(new THREE.Vector3());
+
+    let ex = 0;
+    let ey = 0;
+    let xMin = 0;
+    let xMax = 0;
+    let yMin = 0;
+    let yMax = 0;
+    if (exploded) {
+      Object.values(model.explode).forEach(([dx, dy]) => {
+        ex = Math.max(ex, Math.abs(dx));
+        ey = Math.max(ey, Math.abs(dy));
+        xMin = Math.min(xMin, dx);
+        xMax = Math.max(xMax, dx);
+        yMin = Math.min(yMin, dy);
+        yMax = Math.max(yMax, dy);
+      });
+    }
+    const fitX = sz.x + (exploded ? 2 * ex : 0);
+    const fitY = sz.y + (exploded ? 2 * ey : 0);
+
+    const aspect = size.width / Math.max(1, size.height);
+    const fovV = THREE.MathUtils.degToRad(camera.fov);
+    const fovH = 2 * Math.atan(Math.tan(fovV / 2) * aspect);
+    const dist =
+      Math.max(fitX / 2 / Math.tan(fovH / 2), fitY / 2 / Math.tan(fovV / 2)) * 1.25;
+    goalRadius.current = dist;
+    goalTarget.current.set(
+      c.x + (exploded ? (xMin + xMax) / 2 : 0),
+      c.y + (exploded ? (yMin + yMax) / 2 : 0),
+      c.z,
+    );
+  }, [outerRef, model, exploded, camera.fov, size.width, size.height]);
+
+  useFrame((_, delta) => {
+    if (!controls) return;
+    const ease = Math.min(1, delta * 4);
+    const spherical = new THREE.Spherical().setFromVector3(
+      camera.position.clone().sub(controls.target),
+    );
+    spherical.radius += (goalRadius.current - spherical.radius) * ease;
+    controls.target.lerp(goalTarget.current, ease);
+    camera.position.copy(controls.target).add(new THREE.Vector3().setFromSpherical(spherical));
+    controls.update();
+  });
+
+  return null;
+}
+
 function CylinderModel({
   model,
+  outerRef,
   exploded,
   selectedPart,
   onSelectPart,
   strokeMm,
 }: {
   model: ModelConfig;
+  outerRef: React.RefObject<Group>;
   exploded: boolean;
   selectedPart: string | null;
   onSelectPart: (part: string | null) => void;
   strokeMm: number;
 }) {
-  const group = useRef<Group>(null);
   const partsRef = useRef<PartInfo[]>([]);
   const { scene } = useGLTF(import.meta.env.BASE_URL + model.file);
 
@@ -131,8 +208,8 @@ function CylinderModel({
   }, [scene, selectedPart, onSelectPart, model.id]);
 
   useFrame((_, delta) => {
-    if (group.current && !selectedPart) {
-      group.current.rotation.y += delta * 0.15;
+    if (outerRef.current && !selectedPart) {
+      outerRef.current.rotation.y += delta * 0.15;
     }
 
     partsRef.current.forEach(({ mesh, partKey, originalX, originalY }) => {
@@ -171,7 +248,7 @@ function CylinderModel({
   });
 
   return (
-    <group ref={group}>
+    <group ref={outerRef}>
       <group position={model.center}>
         <primitive object={scene} />
       </group>
@@ -186,6 +263,7 @@ export function Cylinder3DViewer() {
   const [strokeMm, setStrokeMm] = useState(100);
 
   const model = MODELS.find((m) => m.id === modelId) ?? MODELS[0];
+  const outerRef = useRef<Group>(null);
   const handleSelectPart = useCallback((part: string | null) => {
     setSelectedPart(part);
   }, []);
@@ -261,17 +339,22 @@ export function Cylinder3DViewer() {
           <CylinderModel
             key={model.id}
             model={model}
+            outerRef={outerRef}
             exploded={exploded}
             selectedPart={selectedPart}
             onSelectPart={handleSelectPart}
             strokeMm={strokeMm}
           />
+          <CameraRig outerRef={outerRef} model={model} exploded={exploded} />
         </Suspense>
         <ContactShadows position={[0, -0.05, 0]} opacity={0.4} scale={0.6} blur={2.5} />
         <OrbitControls
+          makeDefault
+          enableDamping
+          dampingFactor={0.12}
           enablePan={false}
-          minDistance={0.3}
-          maxDistance={5.0}
+          minDistance={0.05}
+          maxDistance={20}
           target={[0, 0, 0]}
         />
       </Canvas>
