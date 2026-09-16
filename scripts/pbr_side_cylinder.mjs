@@ -15,11 +15,11 @@ const doc = await io.read(FILE);
 
 const materials = [
   // [match predicate on (r,g,b), metallic, roughness]
-  { test: ([r, g, b]) => r > 0.85, met: 1.0, rough: 0.12 },          // chrome
-  { test: ([r, g, b]) => r > 0.6 && g > 0.45 && b < 0.3, met: 0.85, rough: 0.32 }, // gold
-  { test: ([r, g, b]) => r < 0.12 && g < 0.12 && b < 0.13, met: 0.35, rough: 0.5 }, // black
-  { test: ([r, g, b]) => r > 0.4 && r < 0.65, met: 0.7, rough: 0.45 },  // steel / dark silver
-  { test: ([r, g, b]) => true, met: 0.95, rough: 0.3 },               // silver (fallback)
+  { test: ([r, g, b]) => r > 0.86, met: 1.0, rough: 0.12 },          // chrome
+  { test: ([r, g, b]) => r > 0.65 && g > 0.45 && b < 0.35, met: 0.9, rough: 0.35 },  // gold/brass
+  { test: ([r, g, b]) => r < 0.12 && g < 0.12 && b < 0.14, met: 0.2, rough: 0.6 }, // black matte
+  { test: ([r, g, b]) => r > 0.25 && r < 0.4, met: 0.6, rough: 0.5 },   // dark gray
+  { test: ([r, g, b]) => true, met: 0.9, rough: 0.35 },               // brushed aluminum
 ];
 
 for (const mat of doc.getRoot().listMaterials()) {

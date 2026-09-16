@@ -5,14 +5,14 @@ Refined stylized GLB for the side-moving vertical electric cylinder
 import trimesh
 import numpy as np
 
-SILVER   = [0.74, 0.75, 0.77, 1.0]
-SILVER_D = [0.55, 0.56, 0.58, 1.0]
-BLACK    = [0.05, 0.05, 0.06, 1.0]
-GOLD     = [0.80, 0.58, 0.16, 1.0]
-GOLD_D   = [0.62, 0.42, 0.10, 1.0]
-CHROME   = [0.88, 0.89, 0.91, 1.0]
-DARKGRAY = [0.22, 0.23, 0.25, 1.0]
-STEEL    = [0.60, 0.61, 0.63, 1.0]
+SILVER   = [0.60, 0.61, 0.63, 1.0]
+SILVER_D = [0.45, 0.46, 0.48, 1.0]
+BLACK    = [0.06, 0.06, 0.07, 1.0]
+GOLD     = [0.85, 0.60, 0.15, 1.0]
+GOLD_D   = [0.55, 0.38, 0.10, 1.0]
+CHROME   = [0.90, 0.91, 0.92, 1.0]
+DARKGRAY = [0.30, 0.31, 0.33, 1.0]
+STEEL    = [0.55, 0.56, 0.58, 1.0]
 
 def _colored(mesh, color):
     mesh.visual = trimesh.visual.ColorVisuals(
