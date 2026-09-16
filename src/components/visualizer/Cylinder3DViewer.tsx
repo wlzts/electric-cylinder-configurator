@@ -20,6 +20,7 @@ interface ViewerModel {
 const MODELS: ViewerModel[] = [
   { id: 'coze40', label: 'COZE40 滚珠丝杠型', file: 'models/electric-cylinder.glb?v=7' },
   { id: 'dmc160', label: 'DMC160 同步带型', file: 'models/dmc160.glb?v=7' },
+  { id: 'side200', label: '侧移电缸 行程200', file: 'models/side-cylinder.glb?v=1' },
 ];
 
 export function Cylinder3DViewer() {
